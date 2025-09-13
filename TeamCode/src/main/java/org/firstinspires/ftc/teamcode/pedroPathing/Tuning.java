@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
-
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.changes;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.drawCurrent;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.drawCurrentAndHistory;
@@ -325,7 +324,7 @@ class TurnTuner extends OpMode {
  */
 class ForwardVelocityTuner extends OpMode {
     private final ArrayList<Double> velocities = new ArrayList<>();
-    public static double DISTANCE = 30;
+    public static double DISTANCE = 48;
     public static double RECORD_NUMBER = 10;
 
     private boolean end;
@@ -431,7 +430,7 @@ class ForwardVelocityTuner extends OpMode {
 class LateralVelocityTuner extends OpMode {
     private final ArrayList<Double> velocities = new ArrayList<>();
 
-    public static double DISTANCE = 30;
+    public static double DISTANCE = 48;
     public static double RECORD_NUMBER = 10;
 
     private boolean end;

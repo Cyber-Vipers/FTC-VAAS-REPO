@@ -1,14 +1,20 @@
 package org.firstinspires.ftc.teamcode.Runt;
 
 import com.pedropathing.follower.Follower;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.Constants;
 import org.openftc.easyopencv.OpenCvCamera;
+
+import java.util.List;
+
 @TeleOp(name="RUNT TeleopV1")
 public class Base_Teleop extends OpMode {
     /**
@@ -19,7 +25,8 @@ public class Base_Teleop extends OpMode {
     private Follower follower;
 
     Limelight3A limelight;
-    DcMotor frontLeft,backLeft,frontRight,backRight;
+    public boolean is_intaking = true;
+    DcMotor frontLeft,backLeft,frontRight,backRight,intake;
     OpenCvCamera camera;
     float forward,strafe,turn;
     double denominator;
@@ -29,6 +36,8 @@ public class Base_Teleop extends OpMode {
         backLeft = hardwareMap.get(DcMotor.class,"backLeft");
         frontRight = hardwareMap.get(DcMotor.class,"frontRight");
         backRight = hardwareMap.get(DcMotor.class, "backRight");
+        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         telemetry.setMsTransmissionInterval(11);
         follower = Constants.createFollower(hardwareMap);
@@ -50,10 +59,28 @@ public class Base_Teleop extends OpMode {
      */
     @Override
     public void loop() {
-
         movement();
+        run_intake();
+    }
+
+
+// if x is pressed then stop intake else move constantly
+    public void run_intake(){
+        if (gamepad2.x) {
+            is_intaking = false;
+        } else {
+            is_intaking = true;
+        }
+        if (is_intaking) {
+           intake.setPower(1);
+        } else{
+            intake.setPower(0);
+        }
 
     }
+
+
+
     public void movement(){
         forward = gamepad1.left_stick_y;
         strafe = gamepad1.left_stick_x;
