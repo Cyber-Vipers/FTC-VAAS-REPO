@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.Runt.opmodes;
 
-import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.drawCurrent;
-import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.drawCurrentAndHistory;
+
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 
 
@@ -29,7 +28,6 @@ public class Runt_Line extends OpMode {
     public void init_loop() {
         follower = Constants.createFollower(hardwareMap);
         follower.update();
-        drawCurrent();
     }
 
     @Override
@@ -46,7 +44,7 @@ public class Runt_Line extends OpMode {
     @Override
     public void loop() {
         follower.update();
-        drawCurrentAndHistory();
+
 
         if (!follower.isBusy()) {
             stop();
