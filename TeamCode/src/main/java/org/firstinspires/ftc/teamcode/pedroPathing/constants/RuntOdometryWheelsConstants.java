@@ -14,7 +14,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-public class Constants {
+public class RuntOdometryWheelsConstants {
 
     public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(8)
@@ -22,8 +22,9 @@ public class Constants {
             .lateralZeroPowerAcceleration(-51.40005493215037)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.05, 0.5, 0.015, 0.015))
             .headingPIDFCoefficients(new PIDFCoefficients(1, 0, 0, 0.01))
+
             .drivePIDFCoefficients(
-                    new FilteredPIDFCoefficients(0.0048, 0.0005, 0, 0.1, 1)
+                    new FilteredPIDFCoefficients(0.0068, 0.000527785, 0.0006573747, 0.00001, 2)
                     //error 0.2, error derivative 0.1,
             );
 
@@ -55,7 +56,7 @@ public class Constants {
             0.99,
             100,
             1,
-            0.5
+            2
     );
 
     public static Follower createFollower(HardwareMap hardwareMap) {

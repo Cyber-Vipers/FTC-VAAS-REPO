@@ -20,7 +20,8 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.pedroPathing.constants.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
+import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntVisualConstants;
 
 import java.util.function.Supplier;
 
@@ -124,7 +125,7 @@ public class Runt_Teleop extends OpMode {
     @Override
     public void init() {
         launchState = LaunchState.IDLE;
-        follower = Constants.createFollower(hardwareMap);
+        follower = RuntVisualConstants.createFollower(hardwareMap);
         follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
         follower.update();
         limelight = hardwareMap.get(Limelight3A.class,"limelight");

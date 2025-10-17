@@ -24,13 +24,13 @@ import com.pedropathing.util.*;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.pedroPathing.constants.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntVisualConstants;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This is the Tuning class. It contains a selection menu for various tuning OpModes.
+ * This is the Tuning class. It contains a selection menu for various Tuning OpModes.
  *
  * @author Baron Henderson - 20077 The Indubitables
  * @version 1.0, 6/26/2025
@@ -80,10 +80,10 @@ public class Tuning extends SelectableOpMode {
     @Override
     public void onSelect() {
         if (follower == null) {
-            follower = Constants.createFollower(hardwareMap);
+            follower = RuntVisualConstants.createFollower(hardwareMap);
             PanelsConfigurables.INSTANCE.refreshClass(this);
         } else {
-            follower = Constants.createFollower(hardwareMap);
+            follower = RuntVisualConstants.createFollower(hardwareMap);
         }
 
         follower.setStartingPose(new Pose());

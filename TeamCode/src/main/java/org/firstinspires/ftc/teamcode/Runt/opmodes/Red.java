@@ -15,7 +15,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
-import org.firstinspires.ftc.teamcode.pedroPathing.constants.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
 import java.util.function.Supplier;
 
@@ -43,7 +43,7 @@ public class Red extends OpMode {
         backRight = hardwareMap.get(DcMotor.class, "backRight");
         frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
         backRight.setDirection(DcMotorSimple.Direction.REVERSE);
-        follower = Constants.createFollower(hardwareMap);
+        follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
         follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
         follower.update();
         blink = hardwareMap.get(RevBlinkinLedDriver.class,"blink");

@@ -10,7 +10,7 @@ import com.pedropathing.paths.Path;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.pedroPathing.constants.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
 @TeleOp(name="Runt Line")
 public class Runt_Line extends OpMode {
@@ -26,13 +26,13 @@ public class Runt_Line extends OpMode {
     /** This initializes the Follower and creates the forward and backward Paths. */
     @Override
     public void init_loop() {
-        follower = Constants.createFollower(hardwareMap);
+        follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
         follower.update();
     }
 
     @Override
     public void start() {
-        follower = Constants.createFollower(hardwareMap);
+        follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
         follower.activateAllPIDFs();
         forwards = new Path(new BezierLine(new Pose(0,0), new Pose(DISTANCE,0)));
         forwards.setConstantHeadingInterpolation(0);

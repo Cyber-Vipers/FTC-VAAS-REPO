@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.Runt.opmodes;
 import com.bylazar.configurables.annotations.Configurable;
-import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
@@ -15,7 +14,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
-import org.firstinspires.ftc.teamcode.pedroPathing.constants.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
 import java.util.function.Supplier;
 
@@ -31,6 +30,7 @@ public class Base_Teleop extends OpMode {
 
     private Supplier<PathChain> pathChain;
     private Supplier<PathChain> rot;
+
     private TelemetryManager telemetryM;
     private boolean slowMode = false;
     private boolean correct_me = false;
@@ -44,7 +44,7 @@ public class Base_Teleop extends OpMode {
     @Override
     public void init() {
         
-        follower = Constants.createFollower(hardwareMap);
+        follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
         follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
         follower.update();
         limelight = hardwareMap.get(Limelight3A.class,"limelight");
