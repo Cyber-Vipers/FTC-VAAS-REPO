@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Runt.opmodes;/*   MIT License
+package org.firstinspires.ftc.teamcode.Competition.opmodes;/*   MIT License
  *   Copyright (c) [2025] [Base 10 Assets, LLC]
  *
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -37,7 +37,6 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntVisualConstants;
 
 import java.util.function.Supplier;
@@ -47,9 +46,9 @@ import java.util.function.Supplier;
  * 2025-2026 FIRST® Tech Challenge season DECODE™!
  */
 
-@TeleOp(name = "Runt Teleop", group = "StarterBot")
+@TeleOp(name = "Competition Teleop", group = "Comp")
 //@Disabled
-public class Runt_Teleop extends OpMode {
+public class Competition_Teleop extends OpMode {
     final double FEED_TIME_SECONDS = 1.60; //The feeder servos run this long when a shot is requested.
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
     final double FULL_SPEED = 1.0;
@@ -229,18 +228,13 @@ public class Runt_Teleop extends OpMode {
             leftLauncher.setVelocity(STOP_SPEED);
             rightLauncher.setVelocity(STOP_SPEED);
         }
-
-        if (gamepad1.dpadDownWasPressed()) {
-            switch (diverterDirection){
-                case LEFT:
-                    diverterDirection = DiverterDirection.RIGHT;
-                    diverter.setPosition(RIGHT_POSITION);
-                    break;
-                case RIGHT:
-                    diverterDirection = DiverterDirection.LEFT;
-                    diverter.setPosition(LEFT_POSITION);
-                    break;
-            }
+        if (gamepad1.dpadRightWasPressed()) {
+            diverterDirection = DiverterDirection.RIGHT;
+            diverter.setPosition(RIGHT_POSITION);
+        }
+        if (gamepad1.dpadLeftWasPressed()) {
+            diverterDirection = DiverterDirection.LEFT;
+            diverter.setPosition(LEFT_POSITION);
         }
 
         if (gamepad1.aWasPressed()){
@@ -257,19 +251,17 @@ public class Runt_Teleop extends OpMode {
         }
 
         if (gamepad1.dpadUpWasPressed()) {
-            switch (launcherDistance) {
-                case CLOSE:
-                    launcherDistance = LauncherDistance.FAR;
-                    launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY;
-                    launcherMin = LAUNCHER_FAR_MIN_VELOCITY;
-                    break;
-                case FAR:
-                    launcherDistance = LauncherDistance.CLOSE;
-                    launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY;
-                    launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
-                    break;
-            }
+            launcherDistance = LauncherDistance.FAR;
+            launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY;
+            launcherMin = LAUNCHER_FAR_MIN_VELOCITY;
         }
+        if (gamepad1.dpadDownWasPressed()) {
+            launcherDistance = LauncherDistance.CLOSE;
+            launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY;
+            launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
+
+        }
+
 
         /*
          * Now we call our "Launch" function.
