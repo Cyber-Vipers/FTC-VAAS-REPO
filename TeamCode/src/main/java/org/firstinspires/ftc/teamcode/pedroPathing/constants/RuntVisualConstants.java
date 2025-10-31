@@ -25,8 +25,7 @@ public class RuntVisualConstants {
             .leftRearMotorName("backLeft")
             .rightFrontMotorName("frontRight")
             .rightRearMotorName("backRight")
-            .xVelocity( 75.26908333845965)
-            .yVelocity(67.45646319051427)
+            .useBrakeModeInTeleOp(true)
             .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
@@ -40,11 +39,10 @@ public class RuntVisualConstants {
     );
     public static OTOSConstants localizerConstants = new OTOSConstants()
             .hardwareMapName("otos")
-            .offset(new SparkFunOTOS.Pose2D(0,0,180))
+            .offset(new SparkFunOTOS.Pose2D(0,-3,180))
             .linearUnit(DistanceUnit.INCH)
-            .linearScalar( 1.2180105365853657)
+            .linearScalar(1.32009892333)
             .angularScalar(0.9877240522063436)
-
             .angleUnit(AngleUnit.RADIANS);
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)

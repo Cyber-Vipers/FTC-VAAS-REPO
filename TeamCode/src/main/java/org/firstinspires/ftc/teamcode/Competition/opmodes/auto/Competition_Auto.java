@@ -1,55 +1,91 @@
-package org.firstinspires.ftc.teamcode.Competition.opmodes;/*   MIT License
- *   Copyright (c) [2025] [Base 10 Assets, LLC]
- *
- *   Permission is hereby granted, free of charge, to any person obtaining a copy
- *   of this software and associated documentation files (the "Software"), to deal
- *   in the Software without restriction, including without limitation the rights
- *   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *   copies of the Software, and to permit persons to whom the Software is
- *   furnished to do so, subject to the following conditions:
+package org.firstinspires.ftc.teamcode.Competition.opmodes.auto;
 
- *   The above copyright notice and this permission notice shall be included in all
- *   copies or substantial portions of the Software.
+import com.bylazar.configurables.PanelsConfigurables;
+import com.bylazar.configurables.annotations.IgnoreConfigurable;
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierLine;
+import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.PathChain;
+import com.pedropathing.telemetry.SelectableOpMode;
+import com.pedropathing.util.PoseHistory;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.*;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.teamcode.Competition.opmodes.Teleop.Competition_Teleop;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntVisualConstants;
 
- *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *   SOFTWARE.
- */
-
-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
-import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.PathChain;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.util.ElapsedTime;
+@Autonomous(name = "Competition Auto", group = "Competition")
+public class Competition_Auto extends SelectableOpMode {
 
-import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntVisualConstants;
+    public static Follower follower;
 
-import java.util.function.Supplier;
+    @IgnoreConfigurable
+    static PoseHistory poseHistory;
 
-/*
- * This file includes a teleop (driver-controlled) file for the goBILDA® Robot in 3 Days for the
- * 2025-2026 FIRST® Tech Challenge season DECODE™!
- */
+    @IgnoreConfigurable
+    static TelemetryManager telemetryM;
 
-@TeleOp(name = "Competition Teleop", group = "Comp")
-//@Disabled
-public class Competition_Teleop extends OpMode {
-    final double FEED_TIME_SECONDS = 1.60; //The feeder servos run this long when a shot is requested.
+    @IgnoreConfigurable
+    static ArrayList<String> changes = new ArrayList<>();
+
+    public Competition_Auto() {
+        super("Pick Your Poison", s -> {
+            s.folder("Red", l -> {
+                l.add("Red A", Red::new);
+            });
+            s.folder("Blue", l -> {
+                l.add("Blue A", Blue_A1::new);
+            });
+        });
+    }
+
+    @Override
+    public void onSelect() {
+        if (follower == null) {
+            follower = RuntVisualConstants.createFollower(hardwareMap);
+            PanelsConfigurables.INSTANCE.refreshClass(this);
+        } else {
+            follower = RuntVisualConstants.createFollower(hardwareMap);
+        }
+
+        follower.setStartingPose(new Pose());
+
+        poseHistory = follower.getPoseHistory();
+
+        telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
+    }
+
+    @Override
+    public void onLog(List<String> lines) {}
+
+
+    /** This creates a full stop of the robot by setting the drive motors to run at 0 power. */
+    public static void stopRobot() {
+        follower.startTeleopDrive(true);
+        follower.setTeleOpDrive(0,0,0,true);
+    }
+}
+class Red extends OpMode{
+    @Override
+    public void init() {
+        telemetry.addLine("I'm Red Bro");
+    }
+    @Override
+    public void loop() {
+    }
+}
+class Blue_A1 extends OpMode{
+    final double FEED_TIME_SECONDS = 1.45; //The feeder servos run this long when a shot is requested.
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
     final double FULL_SPEED = 1.0;
 
@@ -121,11 +157,18 @@ public class Competition_Teleop extends OpMode {
     double leftBackPower;
     double rightBackPower;
 
-    /*
-     * Code to run ONCE when the driver hits INIT
-     */
+    public enum path_pos {
+        A1,
+        A2,
+        A3,
+        A4,
+        end,
+    }
+    public path_pos current_path = path_pos.A1;
+
     @Override
     public void init() {
+        telemetry.addLine("I'm Blue Bro");
         leftLaunchState = LaunchState.IDLE;
         rightLaunchState = LaunchState.IDLE;
 
@@ -191,138 +234,94 @@ public class Competition_Teleop extends OpMode {
         /*
          * Tell the driver that initialization is complete.
          */
+        intakeState = IntakeState.ON;
+        intake.setPower(1);
         telemetry.addData("Status", "Initialized");
     }
 
-    /*
-     * Code to run REPEATEDLY after the driver hits INIT, but before they hit START
-     */
-    @Override
-    public void init_loop() {
-    }
-
-    /*
-     * Code to run ONCE when the driver hits START
-     */
-    @Override
-    public void start() {
-        follower.startTeleopDrive();
-    }
-
-    /*
-     * Code to run REPEATEDLY after the driver hits START but before they hit STOP
-     */
     @Override
     public void loop() {
         follower.update();
-        mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
-
-        /*
-         * Here we give the user control of the speed of the launcher motor without automatically
-         * queuing a shot.
-         */
-        if (gamepad1.y) {
-            leftLauncher.setVelocity(launcherTarget);
-            rightLauncher.setVelocity(launcherTarget);
-        } else if (gamepad1.b) { // stop flywheel
-            leftLauncher.setVelocity(STOP_SPEED);
-            rightLauncher.setVelocity(STOP_SPEED);
-        }
-        if (gamepad1.dpadRightWasPressed()) {
-            diverterDirection = DiverterDirection.RIGHT;
-            diverter.setPosition(RIGHT_POSITION);
-        }
-        if (gamepad1.dpadLeftWasPressed()) {
-            diverterDirection = DiverterDirection.LEFT;
-            diverter.setPosition(LEFT_POSITION);
-        }
-
-        if (gamepad1.aWasPressed()){
-            switch (intakeState){
-                case ON:
-                    intakeState = IntakeState.OFF;
-                    intake.setPower(0);
+        launcherDistance = LauncherDistance.FAR;
+        if (!follower.isBusy()) {
+            switch (current_path) {
+                case A1:
+                    follower.followPath(new Blue_A1_Paths(follower).Path1);
                     break;
-                case OFF:
-                    intakeState = IntakeState.ON;
-                    intake.setPower(1);
+                case A2:
+                    follower.followPath(new Blue_A1_Paths(follower).Path2);
+                    break;
+                case A3:
+                    follower.followPath(new Blue_A1_Paths(follower).Path3);
+                    break;
+                case A4:
+                    follower.followPath(new Blue_A1_Paths(follower).Path4);
                     break;
             }
         }
+        if (follower.atParametricEnd()) {
+            switch (current_path) {
+                case A1:
+                    current_path = path_pos.A2;
+                case A2:
 
-        if (gamepad1.dpadUpWasPressed()) {
-            launcherDistance = LauncherDistance.FAR;
-            launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY;
-            launcherMin = LAUNCHER_FAR_MIN_VELOCITY;
-        }
-        if (gamepad1.dpadDownWasPressed()) {
-            launcherDistance = LauncherDistance.CLOSE;
-            launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY;
-            launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
-
-        }
-
-
-        /*
-         * Now we call our "Launch" function.
-         */
-        launchLeft(gamepad1.leftBumperWasPressed());
-        launchRight(gamepad1.rightBumperWasPressed());
-
-        /*
-         * Show the state and motor powers
-         */
-        telemetry.addData("State", leftLaunchState);
-        telemetry.addData("launch distance", launcherDistance);
-        telemetry.addData("Left Launcher Velocity", leftLauncher.getVelocity());
-        telemetry.addData("Right Launcher Velocity", rightLauncher.getVelocity());
-
-    }
-
-    /*
-     * Code to run ONCE after the driver hits STOP
-     */
-    @Override
-    public void stop() {
-    }
-
-    void mecanumDrive(double forward, double strafe, double rotate){
-
-        if (!automatedDrive) {
-            //Make the last parameter false for field-centric
-            //In case the drivers want to use a "slowMode" you can scale the vectors
-
-            //This is the normal version to use in the TeleOp
-            if (!slowMode) follower.setTeleOpDrive(
-                    -gamepad1.left_stick_y,
-                    -gamepad1.left_stick_x,
-                    -gamepad1.right_stick_x,
-                    true // Robot Centric
-            );
-
-                //This is how it looks with slowMode on
-            else follower.setTeleOpDrive(
-                    -gamepad1.left_stick_y * slowModeMultiplier,
-                    -gamepad1.left_stick_x * slowModeMultiplier,
-                    -gamepad1.right_stick_x * slowModeMultiplier,
-                    true // Robot Centric
-            );
-        }
-
-        //Automated PathFollowing
-
-        //Stop automated following if the follower is done
-        if (automatedDrive && (gamepad1.b || !follower.isBusy())) {
-            follower.startTeleopDrive();
-            automatedDrive = false;
-        }
-
-        //Slow Mode
-        if (gamepad1.right_bumper) {
-            slowMode = !slowMode;
+                    current_path = path_pos.A3;
+                    break;
+                case A3:
+                    diverterDirection = DiverterDirection.LEFT;
+                    diverter.setPosition(LEFT_POSITION);
+                    current_path = path_pos.A4;
+                    break;
+                case A4:
+                    current_path = path_pos.end;
+                    break;
+                case end:
+                    launchLeft(true);
+                    launchRight(true);
+                    break;
+            }
         }
     }
 
+    class Blue_A1_Paths {
+
+        public PathChain Path1;
+        public PathChain Path2;
+        public PathChain Path3;
+        public PathChain Path4;
+
+        public Blue_A1_Paths(Follower follower) {
+            Path1 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(56.000, 8.000), new Pose(56.000, 36.000))
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(180))
+                    .build();
+
+            Path2 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(56.000, 36.000), new Pose(29.832, 35.215))
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                    .build();
+
+            Path3 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(29.832, 35.215), new Pose(8.972, 36.561))
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                    .build();
+
+            Path4 = follower
+                    .pathBuilder()
+                    .addPath(new BezierLine(new Pose(8.972, 36.561), new Pose(72.897, 9.196)))
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(125))
+                    .build();
+        }
+    }
     void launchLeft(boolean shotRequested) {
         switch (leftLaunchState) {
             case IDLE:
