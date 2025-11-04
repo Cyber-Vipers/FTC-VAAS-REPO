@@ -230,7 +230,7 @@ public class Competition_Teleop extends OpMode {
             rightLauncher.setVelocity(STOP_SPEED);
         }
 
-        if (gamepad1.aWasPressed()){
+        if (gamepad1.right_bumper){
             switch (intakeState){
                 case ON:
                     intakeState = IntakeState.OFF;
@@ -242,8 +242,11 @@ public class Competition_Teleop extends OpMode {
                     intake.setPower(1);
                     break;
             }
+            if (gamepad1.left_bumper){
+                intake.setPower(-1000);
+            }
         }
-        if (gamepad1.left_bumper) {
+        if (gamepad1.a) {
             switch (diverterDirection){
                 case LEFT:
                     diverterDirection = DiverterDirection.RIGHT;
@@ -255,12 +258,12 @@ public class Competition_Teleop extends OpMode {
                     break;
             }
         }
-        if (gamepad1.dpadUpWasPressed()) {
+        if (gamepad1.right_trigger > 0){
             launcherDistance = LauncherDistance.FAR;
             launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY;
             launcherMin = LAUNCHER_FAR_MIN_VELOCITY;
         }
-        if (gamepad1.dpadDownWasPressed()) {
+        if (gamepad1.left_trigger > 0){
             launcherDistance = LauncherDistance.CLOSE;
             launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY;
             launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
@@ -271,8 +274,8 @@ public class Competition_Teleop extends OpMode {
         /*
          * Now we call our "Launch" function.
          */
-        launchLeft(gamepad1.dpadLeftWasPressed());
-        launchRight(gamepad1.dpadRightWasPressed());
+        launchLeft(gamepad1.dpad_left);;
+        launchRight(gamepad1.dpad_right);
 
         /*
          * Show the state and motor powers
