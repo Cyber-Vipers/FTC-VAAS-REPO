@@ -18,7 +18,6 @@ public class RuntVisualConstants {
     public static FollowerConstants followerConstants = new FollowerConstants()
             .forwardZeroPowerAcceleration(-27.0826484916806)
             .lateralZeroPowerAcceleration(-46.51762426139066)
-
             .mass(8);
     public static MecanumConstants driveConstants = new MecanumConstants()
             .leftFrontMotorName("frontLeft")
@@ -26,6 +25,9 @@ public class RuntVisualConstants {
             .rightFrontMotorName("frontRight")
             .rightRearMotorName("backRight")
             .useBrakeModeInTeleOp(true)
+            .maxPower(0.5)
+            .xVelocity(37.303534079724415)
+            .yVelocity(63.95054614450051)
             .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
@@ -39,10 +41,11 @@ public class RuntVisualConstants {
     );
     public static OTOSConstants localizerConstants = new OTOSConstants()
             .hardwareMapName("otos")
-            .offset(new SparkFunOTOS.Pose2D(0,-3,180))
+            .offset(new SparkFunOTOS.Pose2D(0,3.0,-270))
             .linearUnit(DistanceUnit.INCH)
-            .linearScalar(1.32009892333)
-            .angularScalar(0.9877240522063436)
+
+            .linearScalar(5.883762238586158)
+            .angularScalar(-0.9943559517052)
             .angleUnit(AngleUnit.RADIANS);
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)

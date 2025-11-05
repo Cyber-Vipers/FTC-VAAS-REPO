@@ -10,13 +10,16 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.telemetry.SelectableOpMode;
 import com.pedropathing.util.PoseHistory;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.*;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.Competition.opmodes.Teleop.Competition_Teleop;
+import org.firstinspires.ftc.teamcode.Competition.sensors.limelight_thinker;
 import org.firstinspires.ftc.teamcode.pedroPathing.*;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntVisualConstants;
+import org.firstinspires.ftc.teamcode.tools.Detection;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -165,13 +168,20 @@ class Blue_A1 extends OpMode{
         end,
     }
     public path_pos current_path = path_pos.A1;
-
+    public boolean launched = false;
+    public Limelight3A limelight;
+    public int obelisk = 0;
+    public int launch_counter = 0;
+    public limelight_thinker limelight_thinker;
     @Override
     public void init() {
+        limelight = hardwareMap.get(Limelight3A.class,"limelight");
+        limelight.setPollRateHz(100);
+        limelight.start();
         telemetry.addLine("I'm Blue Bro");
         leftLaunchState = LaunchState.IDLE;
         rightLaunchState = LaunchState.IDLE;
-
+        limelight_thinker = new limelight_thinker(limelight);
         leftFrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
         rightFrontDrive = hardwareMap.get(DcMotor.class, "frontRight");
         leftBackDrive = hardwareMap.get(DcMotor.class, "backLeft");
@@ -234,18 +244,29 @@ class Blue_A1 extends OpMode{
         /*
          * Tell the driver that initialization is complete.
          */
-        intakeState = IntakeState.ON;
-        intake.setPower(1);
+
         telemetry.addData("Status", "Initialized");
     }
-
+    @Override
+    public void start() {
+        intakeState = IntakeState.ON;
+        intake.setPower(1);
+    }
     @Override
     public void loop() {
         follower.update();
-        launcherDistance = LauncherDistance.FAR;
+        telemetry.update();
+        Detection detect = limelight_thinker.search();
+        if (detect.april != 0) {
+            telemetry.addData("Selected Obelisk", detect.april);
+            obelisk = detect.april;
+        }
         if (!follower.isBusy()) {
             switch (current_path) {
                 case A1:
+                    launcherDistance = LauncherDistance.FAR;
+                    launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY;
+                    launcherMin = LAUNCHER_FAR_MIN_VELOCITY;
                     follower.followPath(new Blue_A1_Paths(follower).Path1);
                     break;
                 case A2:
@@ -276,10 +297,45 @@ class Blue_A1 extends OpMode{
                     current_path = path_pos.end;
                     break;
                 case end:
-                    launchLeft(true);
-                    launchRight(true);
+                    //logic for shooting correct
+                    //two purple left one green right
+                    if (obelisk == 21) {
+                        //green purple purple
+                        launchRight(true);
+                        if (rightLaunchState == LaunchState.IDLE && !launched) {
+                            launched = true;
+                            launchLeft(true);
+                        }
+                        if (rightLaunchState == LaunchState.IDLE && launched) {
+                            launchLeft(true);
+
+                        }
+
+                    }
+                    if (obelisk == 22) {
+                        if (leftLaunchState == LaunchState.IDLE && !launched) {
+                            launchLeft(true);
+                            launched = true;
+                        }
+                        if (launched && leftLaunchState == LaunchState.IDLE) {
+                            launchRight(true);
+                            launched = false;
+                        }
+                    }
+                    if (obelisk == 23) {
+                        if (leftLaunchState == LaunchState.IDLE && !launched) {
+                            launchLeft(true);
+                            launch_counter = 1;
+                        } else if (!launched && leftLaunchState == LaunchState.IDLE && launch_counter == 1) {
+                            launch_counter = 2;
+                            launchRight(true);
+                            launched = true;
+                        }
+
+                    }
                     break;
             }
+            telemetry.addLine("On Path" + current_path.name());
         }
     }
 
@@ -302,23 +358,25 @@ class Blue_A1 extends OpMode{
             Path2 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(56.000, 36.000), new Pose(29.832, 35.215))
+                            new BezierLine(new Pose(56.000, 36.000), new Pose(24.224, 35.888))
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                    .setTangentHeadingInterpolation()
                     .build();
 
             Path3 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(29.832, 35.215), new Pose(8.972, 36.561))
+                            new BezierLine(new Pose(24.224, 35.888), new Pose(13.458, 35.888))
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                    .setTangentHeadingInterpolation()
                     .build();
 
             Path4 = follower
                     .pathBuilder()
-                    .addPath(new BezierLine(new Pose(8.972, 36.561), new Pose(72.897, 9.196)))
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(125))
+                    .addPath(
+                            new BezierLine(new Pose(13.458, 35.888), new Pose(71.776, 8.523))
+                    )
+                    .setConstantHeadingInterpolation(Math.toRadians(120))
                     .build();
         }
     }
