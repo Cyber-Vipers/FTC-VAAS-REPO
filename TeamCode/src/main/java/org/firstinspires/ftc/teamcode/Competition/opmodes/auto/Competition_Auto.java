@@ -254,12 +254,16 @@ class Aim_Assist extends OpMode {
     @Override
     public void loop() {
         follower.update();
+
         find();
     }
 
     public void find() {
         Detection detect = limelight_thinker.search();
-        follower.turnTo(Math.toRadians(detect.flat_position.getX()));
+        if (detect.april == 20) {
+            follower.turnTo(Math.toRadians(detect.flat_position.getX()));
+        }
+
     }
 }
 class Blue_A1 extends OpMode{
@@ -325,7 +329,7 @@ class Blue_A1 extends OpMode{
         FAR;
     }
     private Follower follower;
-    public static Pose startingPose; //See ExampleAuto to understand how to use this
+    public static Pose startingPose = new Pose(56.5233644859813,8.29906542056074,90); //See ExampleAuto to understand how to use this
     private boolean automatedDrive;
     private LauncherDistance launcherDistance = LauncherDistance.CLOSE;
 
@@ -419,7 +423,6 @@ class Blue_A1 extends OpMode{
         /*
          * Tell the driver that initialization is complete.
          */
-
         telemetry.addData("Status", "Initialized");
     }
     @Override
