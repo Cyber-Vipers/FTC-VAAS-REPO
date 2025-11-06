@@ -93,6 +93,9 @@ public class Competition_Teleop extends OpMode {
     }
     private LaunchState leftLaunchState;
     private LaunchState rightLaunchState;
+    public long last_divert_time = 0;
+    public long divert_cooldown = 1000;
+
 
     private enum DiverterDirection {
         LEFT,
@@ -244,15 +247,18 @@ public class Competition_Teleop extends OpMode {
             }
         }
         if (gamepad1.left_bumper) {
-            switch (diverterDirection){
-                case LEFT:
-                    diverterDirection = DiverterDirection.RIGHT;
-                    diverter.setPosition(RIGHT_POSITION);
-                    break;
-                case RIGHT:
-                    diverterDirection = DiverterDirection.LEFT;
-                    diverter.setPosition(LEFT_POSITION);
-                    break;
+            if (last_divert_time + divert_cooldown <= System.currentTimeMillis()) {
+                switch (diverterDirection) {
+                    case LEFT:
+                        diverterDirection = DiverterDirection.RIGHT;
+                        diverter.setPosition(RIGHT_POSITION);
+                        break;
+                    case RIGHT:
+                        diverterDirection = DiverterDirection.LEFT;
+                        diverter.setPosition(LEFT_POSITION);
+                        break;
+                }
+                last_divert_time = System.currentTimeMillis();
             }
         }
         if (gamepad1.dpadUpWasPressed()) {
