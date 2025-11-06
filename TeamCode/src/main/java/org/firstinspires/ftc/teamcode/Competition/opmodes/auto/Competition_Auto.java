@@ -350,23 +350,23 @@ class Blue_A1 extends OpMode{
             Path1 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(56.000, 8.000), new Pose(56.000, 36.000))
+                            new BezierLine(new Pose(56.523, 8.299), new Pose(61.682, 16.374))
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(180))
+                    .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(120))
                     .build();
 
             Path2 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(56.000, 36.000), new Pose(24.224, 35.888))
+                            new BezierLine(new Pose(61.682, 16.374), new Pose(36.336, 35.439))
                     )
-                    .setTangentHeadingInterpolation()
+                    .setLinearHeadingInterpolation(Math.toRadians(120), Math.toRadians(180))
                     .build();
 
             Path3 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(24.224, 35.888), new Pose(13.458, 35.888))
+                            new BezierLine(new Pose(36.336, 35.439), new Pose(19.514, 35.439))
                     )
                     .setTangentHeadingInterpolation()
                     .build();
@@ -374,9 +374,9 @@ class Blue_A1 extends OpMode{
             Path4 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(13.458, 35.888), new Pose(71.776, 8.523))
+                            new BezierLine(new Pose(19.514, 35.439), new Pose(61.682, 15.925))
                     )
-                    .setConstantHeadingInterpolation(Math.toRadians(120))
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
                     .build();
         }
     }
