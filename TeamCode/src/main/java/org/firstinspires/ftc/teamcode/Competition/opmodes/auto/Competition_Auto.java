@@ -49,6 +49,9 @@ public class Competition_Auto extends SelectableOpMode {
             s.folder("Blue", l -> {
                 l.add("Blue A", Blue_A1::new);
             });
+            s.folder("Testing", l -> {
+                l.add("Aim Assist", Aim_Assist::new);
+            });
         });
     }
 
@@ -85,6 +88,178 @@ class Red extends OpMode{
     }
     @Override
     public void loop() {
+    }
+}
+class Aim_Assist extends OpMode {
+    final double FEED_TIME_SECONDS = 1.45; //The feeder servos run this long when a shot is requested.
+    final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
+    final double FULL_SPEED = 1.0;
+
+    final double LAUNCHER_CLOSE_TARGET_VELOCITY = 1200; //in ticks/second for the close goal.
+    final double LAUNCHER_CLOSE_MIN_VELOCITY = 1175; //minimum required to start a shot for close goal.
+    private boolean slowMode = false;
+    private boolean correct_me = false;
+    private double slowModeMultiplier = 0.5;
+    final double LAUNCHER_FAR_TARGET_VELOCITY = 1350; //Target velocity for far goal
+    final double LAUNCHER_FAR_MIN_VELOCITY = 1325; //minimum required to start a shot for far goal.
+
+    double launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY; //These variables allow
+    double launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
+
+    final double LEFT_POSITION = 0.2962; //the left and right position for the diverter servo
+    final double RIGHT_POSITION = 0;
+
+    // Declare OpMode members.
+    private DcMotor leftFrontDrive = null;
+    private DcMotor rightFrontDrive = null;
+    private DcMotor leftBackDrive = null;
+    private DcMotor rightBackDrive = null;
+    private DcMotorEx leftLauncher = null;
+    private DcMotorEx rightLauncher = null;
+    private DcMotor intake = null;
+    private CRServo leftFeeder = null;
+    private CRServo rightFeeder = null;
+    private Servo diverter = null;
+    private Supplier<PathChain> pathChain;
+    private Supplier<PathChain> rot;
+    ElapsedTime leftFeederTimer = new ElapsedTime();
+    ElapsedTime rightFeederTimer = new ElapsedTime();
+
+
+    private enum LaunchState {
+        IDLE,
+        SPIN_UP,
+        LAUNCH,
+        LAUNCHING,
+    }
+    private LaunchState leftLaunchState;
+    private LaunchState rightLaunchState;
+
+    private enum DiverterDirection {
+        LEFT,
+        RIGHT;
+    }
+    private DiverterDirection diverterDirection = DiverterDirection.LEFT;
+
+    private enum IntakeState {
+        ON,
+        OFF;
+    }
+
+    private IntakeState intakeState = IntakeState.OFF;
+
+    private enum LauncherDistance {
+        CLOSE,
+        FAR;
+    }
+    private Follower follower;
+    public static Pose startingPose; //See ExampleAuto to understand how to use this
+    private boolean automatedDrive;
+    private LauncherDistance launcherDistance = LauncherDistance.CLOSE;
+
+    // Setup a variable for each drive wheel to save power level for telemetry
+    double leftFrontPower;
+    double rightFrontPower;
+    double leftBackPower;
+    double rightBackPower;
+
+    public enum path_pos {
+        A1,
+        A2,
+        A3,
+        A4,
+        end,
+    }
+    public Blue_A1.path_pos current_path = Blue_A1.path_pos.A1;
+    public boolean launched = false;
+    public Limelight3A limelight;
+    public int obelisk = 0;
+    public int launch_counter = 0;
+    public limelight_thinker limelight_thinker;
+    @Override
+    public void init() {
+        limelight = hardwareMap.get(Limelight3A.class,"limelight");
+        limelight.setPollRateHz(100);
+        limelight.start();
+        telemetry.addLine("I'm Blue Bro");
+        leftLaunchState = LaunchState.IDLE;
+        rightLaunchState = LaunchState.IDLE;
+        limelight_thinker = new limelight_thinker(limelight);
+        leftFrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
+        rightFrontDrive = hardwareMap.get(DcMotor.class, "frontRight");
+        leftBackDrive = hardwareMap.get(DcMotor.class, "backLeft");
+        rightBackDrive = hardwareMap.get(DcMotor.class, "backRight");
+        leftLauncher = hardwareMap.get(DcMotorEx.class, "flywheelLeft");
+        rightLauncher = hardwareMap.get(DcMotorEx.class, "flywheelRight");
+        intake = hardwareMap.get(DcMotor.class, "rollerIntake");
+        leftFeeder = hardwareMap.get(CRServo.class, "indexLeft");
+        rightFeeder = hardwareMap.get(CRServo.class, "indexRight");
+        diverter = hardwareMap.get(Servo.class, "modulator");
+
+        /*
+         * To drive forward, most robots need the motor on one side to be reversed,
+         * because the axles point in opposite directions. Pushing the left stick forward
+         * MUST make robot go forward. So adjust these two lines based on your first test drive.
+         * Note: The settings here assume direct drive on left and right wheels. Gear
+         * Reduction or 90 Deg drives may require direction flips
+         */
+        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
+
+        leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        intake.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        leftLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        /*
+         * Setting zeroPowerBehavior to BRAKE enables a "brake mode". This causes the motor to
+         * slow down much faster when it is coasting. This creates a much more controllable
+         * drivetrain. As the robot stops much quicker.
+         */
+        leftFrontDrive.setZeroPowerBehavior(BRAKE);
+        rightFrontDrive.setZeroPowerBehavior(BRAKE);
+        leftBackDrive.setZeroPowerBehavior(BRAKE);
+        rightBackDrive.setZeroPowerBehavior(BRAKE);
+        leftLauncher.setZeroPowerBehavior(BRAKE);
+        rightLauncher.setZeroPowerBehavior(BRAKE);
+
+        /*
+         * set Feeders to an initial value to initialize the servo controller
+         */
+        leftFeeder.setPower(STOP_SPEED);
+        rightFeeder.setPower(STOP_SPEED);
+
+        leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
+        rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
+
+        /*
+         * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
+         * both work to feed the ball into the robot.
+         */
+        rightFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
+        follower = RuntVisualConstants.createFollower(hardwareMap);
+        follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
+        follower.update();
+        /*
+         * Tell the driver that initialization is complete.
+         */
+
+        telemetry.addData("Status", "Initialized");
+    }
+
+    @Override
+    public void loop() {
+        follower.update();
+        find();
+    }
+
+    public void find() {
+        Detection detect = limelight_thinker.search();
+        follower.turnTo(Math.toRadians(detect.flat_position.getX()));
     }
 }
 class Blue_A1 extends OpMode{
