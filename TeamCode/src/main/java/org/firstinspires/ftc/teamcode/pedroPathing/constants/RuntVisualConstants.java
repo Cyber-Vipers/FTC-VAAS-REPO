@@ -20,7 +20,7 @@ public class RuntVisualConstants {
             .forwardZeroPowerAcceleration(-27.0826484916806)
             .lateralZeroPowerAcceleration(-46.51762426139066)
             .headingPIDFCoefficients(new PIDFCoefficients(0.5,0,0.01,0))
-            .mass(8);
+            .mass(9.52544);
     public static MecanumConstants driveConstants = new MecanumConstants()
             .leftFrontMotorName("frontLeft")
             .leftRearMotorName("backLeft")

@@ -12,6 +12,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.Vector;
@@ -21,6 +22,8 @@ import com.pedropathing.paths.callbacks.PathCallback;
 import com.pedropathing.telemetry.SelectableOpMode;
 import com.pedropathing.util.PoseHistory;
 import com.qualcomm.hardware.limelightvision.LLFieldMap;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -59,10 +62,11 @@ public class Competition_Auto extends SelectableOpMode {
                 l.add("Red A", Red::new);
             });
             s.folder("Blue", l -> {
-                l.add("Blue A", Blue_A1::new);
+                l.add("Blue A", Blue_Auto_1::new);
             });
             s.folder("Testing", l -> {
                 l.add("Aim Assist", Aim_Assist::new);
+                l.add("Testing Blue A1", Testing_Blue_A1::new);
             });
         });
     }
@@ -101,6 +105,1091 @@ class Red extends OpMode{
     }
     @Override
     public void loop() {
+    }
+}
+class Blue_Auto_1 extends OpMode{
+    //**PRELOAD MUST BE PURPLE ON RIGHT ONE GREEN ON LEFT**
+    final double FEED_TIME_SECONDS = 1.45; //The feeder servos run this long when a shot is requested.
+    final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
+    final double FULL_SPEED = 1.0;
+
+    final double LAUNCHER_CLOSE_TARGET_VELOCITY = 1200; //in ticks/second for the close goal.
+    final double LAUNCHER_CLOSE_MIN_VELOCITY = 1175; //minimum required to start a shot for close goal.
+    private boolean slowMode = false;
+    private boolean correct_me = false;
+    private double slowModeMultiplier = 0.5;
+    final double LAUNCHER_FAR_TARGET_VELOCITY = 1350; //Target velocity for far goal
+    final double LAUNCHER_FAR_MIN_VELOCITY = 1325; //minimum required to start a shot for far goal.
+
+    double launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY; //These variables allow
+    double launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
+
+    final double LEFT_POSITION = 0.2962; //the left and right position for the diverter servo
+    final double RIGHT_POSITION = 0;
+
+    // Declare OpMode members.
+    private DcMotor leftFrontDrive = null;
+    private DcMotor rightFrontDrive = null;
+    private DcMotor leftBackDrive = null;
+    private DcMotor rightBackDrive = null;
+    private DcMotorEx leftLauncher = null;
+    private DcMotorEx rightLauncher = null;
+    private DcMotor intake = null;
+    private CRServo leftFeeder = null;
+    private CRServo rightFeeder = null;
+    private Servo diverter = null;
+    private Supplier<PathChain> pathChain;
+    private Supplier<PathChain> rot;
+    ElapsedTime leftFeederTimer = new ElapsedTime();
+    ElapsedTime rightFeederTimer = new ElapsedTime();
+
+
+    private enum LaunchState {
+        IDLE,
+        SPIN_UP,
+        LAUNCH,
+        LAUNCHING,
+    }
+    private LaunchState leftLaunchState;
+    private LaunchState rightLaunchState;
+
+    private enum DiverterDirection {
+        LEFT,
+        RIGHT;
+    }
+    private DiverterDirection diverterDirection = DiverterDirection.LEFT;
+
+    private enum IntakeState {
+        ON,
+        OFF;
+    }
+
+    private IntakeState intakeState = IntakeState.OFF;
+
+    private enum LauncherDistance {
+        CLOSE,
+        FAR;
+    }
+    private Follower follower;
+    public static Pose startingPose = new Pose(56.5233644859813,8.29906542056074,90); //See ExampleAuto to understand how to use this
+    private boolean automatedDrive;
+    private LauncherDistance launcherDistance = LauncherDistance.CLOSE;
+
+    // Setup a variable for each drive wheel to save power level for telemetry
+    double leftFrontPower;
+    double rightFrontPower;
+    double leftBackPower;
+    double rightBackPower;
+
+    public int last_action = 0;
+    public enum path_pos {
+        Start,
+        FireStart,
+        A1,
+        A2,
+        A3,
+        A4,
+        A4Fire,
+        A5,
+        A6,
+        A7,
+        A8,
+        A9,
+        end,
+    }
+    public path_pos current_path = path_pos.Start;
+    public boolean launched = false;
+    public Limelight3A limelight;
+    public int obelisk = 0;
+    public int launch_counter = 0;
+    public long last_fire_time = 0;
+    public limelight_thinker limelight_thinker;
+    public boolean has_diverted = false;
+
+    @Override
+    public void init() {
+        limelight = hardwareMap.get(Limelight3A.class,"limelight");
+        limelight.setPollRateHz(100);
+        limelight.start();
+        telemetry.addLine("I'm Blue Bro");
+        leftLaunchState = LaunchState.IDLE;
+        rightLaunchState = LaunchState.IDLE;
+        limelight_thinker = new limelight_thinker(limelight);
+        leftFrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
+        rightFrontDrive = hardwareMap.get(DcMotor.class, "frontRight");
+        leftBackDrive = hardwareMap.get(DcMotor.class, "backLeft");
+        rightBackDrive = hardwareMap.get(DcMotor.class, "backRight");
+        leftLauncher = hardwareMap.get(DcMotorEx.class, "flywheelLeft");
+        rightLauncher = hardwareMap.get(DcMotorEx.class, "flywheelRight");
+        intake = hardwareMap.get(DcMotor.class, "rollerIntake");
+        leftFeeder = hardwareMap.get(CRServo.class, "indexLeft");
+        rightFeeder = hardwareMap.get(CRServo.class, "indexRight");
+        diverter = hardwareMap.get(Servo.class, "modulator");
+        telemetry.addLine("new");
+        /*
+         * To drive forward, most robots need the motor on one side to be reversed,
+         * because the axles point in opposite directions. Pushing the left stick forward
+         * MUST make robot go forward. So adjust these two lines based on your first test drive.
+         * Note: The settings here assume direct drive on left and right wheels. Gear
+         * Reduction or 90 Deg drives may require direction flips
+         */
+        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
+
+        leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        intake.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        leftLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        /*
+         * Setting zeroPowerBehavior to BRAKE enables a "brake mode". This causes the motor to
+         * slow down much faster when it is coasting. This creates a much more controllable
+         * drivetrain. As the robot stops much quicker.
+         */
+        leftFrontDrive.setZeroPowerBehavior(BRAKE);
+        rightFrontDrive.setZeroPowerBehavior(BRAKE);
+        leftBackDrive.setZeroPowerBehavior(BRAKE);
+        rightBackDrive.setZeroPowerBehavior(BRAKE);
+        leftLauncher.setZeroPowerBehavior(BRAKE);
+        rightLauncher.setZeroPowerBehavior(BRAKE);
+
+        /*
+         * set Feeders to an initial value to initialize the servo controller
+         */
+        leftFeeder.setPower(STOP_SPEED);
+        rightFeeder.setPower(STOP_SPEED);
+
+        leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
+        rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
+
+        /*
+         * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
+         * both work to feed the ball into the robot.
+         */
+        rightFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
+        follower = RuntVisualConstants.createFollower(hardwareMap);
+        follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
+        follower.update();
+        /*
+         * Tell the driver that initialization is complete.
+         */
+        telemetry.addData("Status", "Initialized");
+    }
+    public int fire = 0;
+    public long fire_pause = 2000;
+    public long divert_time = 0;
+    public long divert_wait = 1000;
+    Blue_A1_Paths paths;
+    @Override
+    public void start() {
+
+        intakeState = IntakeState.ON;
+        paths = new Blue_A1_Paths(follower);
+        diverterDirection = DiverterDirection.LEFT;
+        diverter.setPosition(LEFT_POSITION);
+        intake.setPower(1);
+    }
+
+
+    @Override
+    public void loop() {
+        follower.update();
+        telemetry.update();
+        if (!follower.isBusy()) {
+            switch (current_path) {
+                case Start:
+                    if (last_action == 0) {
+                        follower.followPath(paths.Path1);
+                        last_action = 1;
+                    } else {
+                        if (follower.atParametricEnd()) {
+                            current_path = path_pos.FireStart;
+                        }
+                    }
+                    break;
+                case FireStart:
+                    LLResult result = limelight.getLatestResult();
+                    if (result != null && result.isValid()) {
+                        double tx = result.getTx();
+                        double ty = result.getTy();
+                        double ta = result.getTa();
+                        for (LLResultTypes.FiducialResult april : result.getFiducialResults()) {
+                            if (april.getFiducialId() != 20 || april.getFiducialId() != 24) {
+                                obelisk = april.getFiducialId();
+                            }
+                        }
+                    }
+                    if (fire == 0) {
+                        if (obelisk == 21) {
+                            launchLeft(true);
+                            launchRight(true);
+                            launchRight(true);
+                        }
+                        if (obelisk == 22) {
+                            launchRight(true);
+                            launchLeft(true);
+                            launchRight(true);
+                        }
+                        if (obelisk == 23) {
+                            launchRight(true);
+                            launchRight(true);
+                            launchLeft(true);
+                        }
+                        fire = 1;
+                    } else {
+                        if (System.currentTimeMillis() + fire_pause >= last_fire_time) {
+                            fire = 1;
+                            last_fire_time = System.currentTimeMillis();
+                            current_path = path_pos.A1;
+                        }
+                    }
+                    break;
+                case A1:
+                    fire = 0;
+                    if (last_action == 1) {
+                        follower.followPath(paths.Path2);
+                        last_action = 2;
+                    } else {
+                        if (follower.atParametricEnd()) {
+                            current_path = path_pos.A2;
+                        }
+                    }
+                    break;
+                case A2:
+                    if (!has_diverted) {
+                        //divert_right
+                        has_diverted = true;
+                        divert_time = System.currentTimeMillis();
+                        diverterDirection = DiverterDirection.RIGHT;
+                        diverter.setPosition(RIGHT_POSITION);
+                    }
+                    if (divert_time + divert_wait <= System.currentTimeMillis()) {
+                        if (last_action == 2) {
+                            follower.followPath(paths.Path3);
+                            last_action = 3;
+                        } else {
+                            if (follower.atParametricEnd()) {
+                                current_path = path_pos.A3;
+                            }
+                        }
+                    }
+                    break;
+                case A3:
+                    has_diverted = false;
+                    if (last_action == 3) {
+                        follower.followPath(paths.Path4);
+                        last_action = 4;
+                    } else {
+                        if (follower.atParametricEnd()) {
+                            current_path = path_pos.A4;
+                        }
+                    }
+                case A4:
+                    if (last_action == 4) {
+                        follower.followPath(paths.Path5);
+                        last_action = 5;
+                    } else {
+                        if (follower.atParametricEnd()) {
+                            current_path = path_pos.A5;
+                        }
+                    }
+                    break;
+                case A4Fire:
+                    if (fire == 0) {
+                        if (obelisk == 21) {
+                            launchLeft(true);
+                            launchRight(true);
+                            launchRight(true);
+                        }
+                        if (obelisk == 22) {
+                            launchRight(true);
+                            launchLeft(true);
+                            launchRight(true);
+                        }
+                        if (obelisk == 23) {
+                            launchRight(true);
+                            launchRight(true);
+                            launchLeft(true);
+                        }
+                        fire = 1;
+                    } else {
+                        if (System.currentTimeMillis() + fire_pause >= last_fire_time) {
+                            fire = 1;
+                            last_fire_time = System.currentTimeMillis();
+                            current_path = path_pos.A5;
+                        }
+                    }
+                    break;
+                case A5:
+                    fire = 0;
+                    if (last_action == 5) {
+                        follower.followPath(paths.Path6);
+                        last_action = 6;
+                    } else {
+                        if (follower.atParametricEnd()) {
+                            current_path = path_pos.A6;
+                        }
+                    }
+                    break;
+                case A6:
+                    if (last_action == 6) {
+                        follower.followPath(paths.Path7);
+                        last_action = 7;
+                    } else {
+                        if (follower.atParametricEnd()) {
+                            current_path = path_pos.A7;
+                        }
+                    }
+                    break;
+                case A7:
+                    if (!has_diverted) {
+                        //divert left
+                        has_diverted = true;
+                        divert_time = System.currentTimeMillis();
+                        diverterDirection = DiverterDirection.LEFT;
+                        diverter.setPosition(LEFT_POSITION);
+                    }
+                    if (divert_time + divert_wait <= System.currentTimeMillis()) {
+                        if (last_action == 2) {
+                            follower.followPath(paths.Path8);
+                            last_action = 3;
+                        } else {
+                            if (follower.atParametricEnd()) {
+                                current_path = path_pos.A8;
+                            }
+                        }
+                    }
+                    break;
+                case A8:
+                    has_diverted = false;
+                    if (last_action == 3) {
+                        follower.followPath(paths.Path9);
+                        last_action = 4;
+                    } else {
+                        if (follower.atParametricEnd()) {
+                            current_path = path_pos.end;
+                        }
+                    }
+                    break;
+                case end:
+                    //purple left, green purple right
+                    if (fire == 0) {
+                        if (obelisk == 21) {
+                            launchRight(true);
+                            launchLeft(true);
+                            launchRight(true);
+                        }
+                        if (obelisk == 22) {
+                            launchLeft(true);
+                            launchRight(true);
+                            launchLeft(true);
+                        }
+                        if (obelisk == 23) {
+                            launchRight(true);
+                            launchRight(true);
+                            launchLeft(true);
+                        }
+                        fire = 1;
+                    }
+                    break;
+            }
+        }
+    }
+
+    public class Blue_A1_Paths {
+        int translational_offset = 4;
+        int rotational_offset = 20;
+        private Follower follower;
+        public PathChain Path1;
+        public PathChain Path2;
+        public PathChain Path3;
+        public PathChain Path4;
+        public PathChain Path5;
+        public PathChain Path6;
+        public PathChain Path7;
+        public PathChain Path8;
+        public PathChain Path9;
+
+        public Blue_A1_Paths(Follower follower) {
+            Path1 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(56.000+translational_offset, 8.000), new Pose(62.355+translational_offset, 14.579))
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(90+rotational_offset), Math.toRadians(114+rotational_offset))
+                    .build();
+
+            Path2 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(62.355+translational_offset, 14.579), new Pose(52.486+translational_offset, 36.336))
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(114+rotational_offset), Math.toRadians(180+rotational_offset))
+                    .build();
+
+            Path3 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(52.486+translational_offset, 36.336), new Pose(36.561+translational_offset, 35.664))
+                    )
+                    .setConstantHeadingInterpolation(Math.toRadians(180+rotational_offset))
+                    .build();
+
+            Path4 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(36.561+translational_offset, 35.664), new Pose(12.785+translational_offset, 34.991))
+                    )
+                    .setConstantHeadingInterpolation(Math.toRadians(180+rotational_offset))
+                    .build();
+
+            Path5 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(12.785+translational_offset, 34.991), new Pose(62.355+translational_offset, 14.579))
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(180+rotational_offset), Math.toRadians(114+rotational_offset))
+                    .build();
+
+            Path6 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(62.355+translational_offset, 14.579), new Pose(53.832+translational_offset, 60.112))
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(114+rotational_offset), Math.toRadians(180+rotational_offset))
+                    .build();
+
+            Path7 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(53.832+translational_offset, 60.112), new Pose(39.028+translational_offset, 60.112))
+                    )
+                    .setConstantHeadingInterpolation(Math.toRadians(180+rotational_offset))
+                    .build();
+
+            Path8 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(39.028+translational_offset, 60.112), new Pose(12.561+translational_offset, 60.336))
+                    )
+                    .setConstantHeadingInterpolation(Math.toRadians(180+rotational_offset))
+                    .build();
+
+            Path9 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierCurve(
+                                    new Pose(12.561+translational_offset, 60.336),
+                                    new Pose(11.664+translational_offset, 78.280),
+                                    new Pose(93.757+translational_offset, 85.458),
+                                    new Pose(50.019+translational_offset, 112.374)
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(180+rotational_offset), Math.toRadians(140+rotational_offset))
+                    .build();
+        }
+    }
+    void launchLeft(boolean shotRequested) {
+        switch (leftLaunchState) {
+            case IDLE:
+                if (shotRequested) {
+                    leftLaunchState = LaunchState.SPIN_UP;
+                }
+                break;
+            case SPIN_UP:
+                leftLauncher.setVelocity(launcherTarget);
+                rightLauncher.setVelocity(launcherTarget);
+                if (leftLauncher.getVelocity() > launcherMin) {
+                    leftLaunchState = LaunchState.LAUNCH;
+                }
+                break;
+            case LAUNCH:
+                leftFeeder.setPower(-FULL_SPEED);
+                leftFeederTimer.reset();
+                leftLaunchState = LaunchState.LAUNCHING;
+                break;
+            case LAUNCHING:
+                if (leftFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                    leftLaunchState = LaunchState.IDLE;
+                    leftFeeder.setPower(STOP_SPEED);
+                }
+                break;
+        }
+    }
+
+    void launchRight(boolean shotRequested) {
+        switch (rightLaunchState) {
+            case IDLE:
+                if (shotRequested) {
+                    rightLaunchState = LaunchState.SPIN_UP;
+                }
+                break;
+            case SPIN_UP:
+                leftLauncher.setVelocity(launcherTarget);
+                rightLauncher.setVelocity(launcherTarget);
+                if (leftLauncher.getVelocity() > launcherMin) {
+                    rightLaunchState = LaunchState.LAUNCH;
+                }
+                break;
+            case LAUNCH:
+                rightFeeder.setPower(-FULL_SPEED);
+                rightFeederTimer.reset();
+                rightLaunchState = LaunchState.LAUNCHING;
+                break;
+            case LAUNCHING:
+                if (rightFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                    rightLaunchState = LaunchState.IDLE;
+                    rightFeeder.setPower(STOP_SPEED);
+                }
+                break;
+        }
+    }
+}
+
+class Red_Auto_1 extends OpMode{
+    //**PRELOAD MUST BE PURPLE ON RIGHT ONE GREEN ON LEFT**
+    final double FEED_TIME_SECONDS = 1.45; //The feeder servos run this long when a shot is requested.
+    final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
+    final double FULL_SPEED = 1.0;
+
+    final double LAUNCHER_CLOSE_TARGET_VELOCITY = 1200; //in ticks/second for the close goal.
+    final double LAUNCHER_CLOSE_MIN_VELOCITY = 1175; //minimum required to start a shot for close goal.
+    private boolean slowMode = false;
+    private boolean correct_me = false;
+    private double slowModeMultiplier = 0.5;
+    final double LAUNCHER_FAR_TARGET_VELOCITY = 1350; //Target velocity for far goal
+    final double LAUNCHER_FAR_MIN_VELOCITY = 1325; //minimum required to start a shot for far goal.
+
+    double launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY; //These variables allow
+    double launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
+
+    final double LEFT_POSITION = 0.2962; //the left and right position for the diverter servo
+    final double RIGHT_POSITION = 0;
+
+    // Declare OpMode members.
+    private DcMotor leftFrontDrive = null;
+    private DcMotor rightFrontDrive = null;
+    private DcMotor leftBackDrive = null;
+    private DcMotor rightBackDrive = null;
+    private DcMotorEx leftLauncher = null;
+    private DcMotorEx rightLauncher = null;
+    private DcMotor intake = null;
+    private CRServo leftFeeder = null;
+    private CRServo rightFeeder = null;
+    private Servo diverter = null;
+    private Supplier<PathChain> pathChain;
+    private Supplier<PathChain> rot;
+    ElapsedTime leftFeederTimer = new ElapsedTime();
+    ElapsedTime rightFeederTimer = new ElapsedTime();
+
+
+    private enum LaunchState {
+        IDLE,
+        SPIN_UP,
+        LAUNCH,
+        LAUNCHING,
+    }
+    private LaunchState leftLaunchState;
+    private LaunchState rightLaunchState;
+
+    private enum DiverterDirection {
+        LEFT,
+        RIGHT;
+    }
+    private DiverterDirection diverterDirection = DiverterDirection.LEFT;
+
+    private enum IntakeState {
+        ON,
+        OFF;
+    }
+
+    private IntakeState intakeState = IntakeState.OFF;
+
+    private enum LauncherDistance {
+        CLOSE,
+        FAR;
+    }
+    private Follower follower;
+    public static Pose startingPose = new Pose(56.5233644859813,8.29906542056074,90); //See ExampleAuto to understand how to use this
+    private boolean automatedDrive;
+    private LauncherDistance launcherDistance = LauncherDistance.CLOSE;
+
+    // Setup a variable for each drive wheel to save power level for telemetry
+    double leftFrontPower;
+    double rightFrontPower;
+    double leftBackPower;
+    double rightBackPower;
+
+    public int last_action = 0;
+    public enum path_pos {
+        Start,
+        FireStart,
+        A1,
+        A2,
+        A3,
+        A4,
+        A4Fire,
+        A5,
+        A6,
+        A7,
+        A8,
+        A9,
+        end,
+    }
+    public path_pos current_path = path_pos.Start;
+    public boolean launched = false;
+    public Limelight3A limelight;
+    public int obelisk = 0;
+    public int launch_counter = 0;
+    public long last_fire_time = 0;
+    public limelight_thinker limelight_thinker;
+    public boolean has_diverted = false;
+
+    @Override
+    public void init() {
+        limelight = hardwareMap.get(Limelight3A.class,"limelight");
+        limelight.setPollRateHz(100);
+        limelight.start();
+        telemetry.addLine("I'm Blue Bro");
+        leftLaunchState = LaunchState.IDLE;
+        rightLaunchState = LaunchState.IDLE;
+        limelight_thinker = new limelight_thinker(limelight);
+        leftFrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
+        rightFrontDrive = hardwareMap.get(DcMotor.class, "frontRight");
+        leftBackDrive = hardwareMap.get(DcMotor.class, "backLeft");
+        rightBackDrive = hardwareMap.get(DcMotor.class, "backRight");
+        leftLauncher = hardwareMap.get(DcMotorEx.class, "flywheelLeft");
+        rightLauncher = hardwareMap.get(DcMotorEx.class, "flywheelRight");
+        intake = hardwareMap.get(DcMotor.class, "rollerIntake");
+        leftFeeder = hardwareMap.get(CRServo.class, "indexLeft");
+        rightFeeder = hardwareMap.get(CRServo.class, "indexRight");
+        diverter = hardwareMap.get(Servo.class, "modulator");
+        telemetry.addLine("new");
+        /*
+         * To drive forward, most robots need the motor on one side to be reversed,
+         * because the axles point in opposite directions. Pushing the left stick forward
+         * MUST make robot go forward. So adjust these two lines based on your first test drive.
+         * Note: The settings here assume direct drive on left and right wheels. Gear
+         * Reduction or 90 Deg drives may require direction flips
+         */
+        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
+
+        leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        intake.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        leftLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        /*
+         * Setting zeroPowerBehavior to BRAKE enables a "brake mode". This causes the motor to
+         * slow down much faster when it is coasting. This creates a much more controllable
+         * drivetrain. As the robot stops much quicker.
+         */
+        leftFrontDrive.setZeroPowerBehavior(BRAKE);
+        rightFrontDrive.setZeroPowerBehavior(BRAKE);
+        leftBackDrive.setZeroPowerBehavior(BRAKE);
+        rightBackDrive.setZeroPowerBehavior(BRAKE);
+        leftLauncher.setZeroPowerBehavior(BRAKE);
+        rightLauncher.setZeroPowerBehavior(BRAKE);
+
+        /*
+         * set Feeders to an initial value to initialize the servo controller
+         */
+        leftFeeder.setPower(STOP_SPEED);
+        rightFeeder.setPower(STOP_SPEED);
+
+        leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
+        rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
+
+        /*
+         * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
+         * both work to feed the ball into the robot.
+         */
+        rightFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
+        follower = RuntVisualConstants.createFollower(hardwareMap);
+        follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
+        follower.update();
+        /*
+         * Tell the driver that initialization is complete.
+         */
+        telemetry.addData("Status", "Initialized");
+    }
+    public int fire = 0;
+    public long fire_pause = 2000;
+    public long divert_time = 0;
+    public long divert_wait = 1000;
+    Blue_A1_Paths paths;
+    @Override
+    public void start() {
+
+        intakeState = IntakeState.ON;
+        paths = new Blue_A1_Paths(follower);
+        diverterDirection = DiverterDirection.LEFT;
+        diverter.setPosition(LEFT_POSITION);
+        intake.setPower(1);
+    }
+
+
+    @Override
+    public void loop() {
+        follower.update();
+        telemetry.update();
+        if (!follower.isBusy()) {
+            switch (current_path) {
+                case Start:
+                    if (last_action == 0) {
+                        follower.followPath(paths.Path1);
+                        last_action = 1;
+                    } else {
+                        if (follower.atParametricEnd()) {
+                            current_path = path_pos.FireStart;
+                        }
+                    }
+                    break;
+                case FireStart:
+                    LLResult result = limelight.getLatestResult();
+                    if (result != null && result.isValid()) {
+                        double tx = result.getTx();
+                        double ty = result.getTy();
+                        double ta = result.getTa();
+                        for (LLResultTypes.FiducialResult april : result.getFiducialResults()) {
+                            if (april.getFiducialId() != 20 || april.getFiducialId() != 24) {
+                                obelisk = april.getFiducialId();
+                            }
+                        }
+                    }
+                    if (fire == 0) {
+                        if (obelisk == 21) {
+                            launchLeft(true);
+                            launchRight(true);
+                            launchRight(true);
+                        }
+                        if (obelisk == 22) {
+                            launchRight(true);
+                            launchLeft(true);
+                            launchRight(true);
+                        }
+                        if (obelisk == 23) {
+                            launchRight(true);
+                            launchRight(true);
+                            launchLeft(true);
+                        }
+                        fire = 1;
+                    } else {
+                        if (System.currentTimeMillis() + fire_pause >= last_fire_time) {
+                            fire = 1;
+                            last_fire_time = System.currentTimeMillis();
+                            current_path = path_pos.A1;
+                        }
+                    }
+                    break;
+                case A1:
+                    fire = 0;
+                    if (last_action == 1) {
+                        follower.followPath(paths.Path2);
+                        last_action = 2;
+                    } else {
+                        if (follower.atParametricEnd()) {
+                            current_path = path_pos.A2;
+                        }
+                    }
+                    break;
+                case A2:
+                    if (!has_diverted) {
+                        //divert_right
+                        has_diverted = true;
+                        divert_time = System.currentTimeMillis();
+                        diverterDirection = DiverterDirection.RIGHT;
+                        diverter.setPosition(RIGHT_POSITION);
+                    }
+                    if (divert_time + divert_wait <= System.currentTimeMillis()) {
+                        if (last_action == 2) {
+                            follower.followPath(paths.Path3);
+                            last_action = 3;
+                        } else {
+                            if (follower.atParametricEnd()) {
+                                current_path = path_pos.A3;
+                            }
+                        }
+                    }
+                    break;
+                case A3:
+                    has_diverted = false;
+                    if (last_action == 3) {
+                        follower.followPath(paths.Path4);
+                        last_action = 4;
+                    } else {
+                        if (follower.atParametricEnd()) {
+                            current_path = path_pos.A4;
+                        }
+                    }
+                case A4:
+                    if (last_action == 4) {
+                        follower.followPath(paths.Path5);
+                        last_action = 5;
+                    } else {
+                        if (follower.atParametricEnd()) {
+                            current_path = path_pos.A5;
+                        }
+                    }
+                    break;
+                case A4Fire:
+                    if (fire == 0) {
+                        if (obelisk == 21) {
+                            launchLeft(true);
+                            launchRight(true);
+                            launchRight(true);
+                        }
+                        if (obelisk == 22) {
+                            launchRight(true);
+                            launchLeft(true);
+                            launchRight(true);
+                        }
+                        if (obelisk == 23) {
+                            launchRight(true);
+                            launchRight(true);
+                            launchLeft(true);
+                        }
+                        fire = 1;
+                    } else {
+                        if (System.currentTimeMillis() + fire_pause >= last_fire_time) {
+                            fire = 1;
+                            last_fire_time = System.currentTimeMillis();
+                            current_path = path_pos.A5;
+                        }
+                    }
+                    break;
+                case A5:
+                    fire = 0;
+                    if (last_action == 5) {
+                        follower.followPath(paths.Path6);
+                        last_action = 6;
+                    } else {
+                        if (follower.atParametricEnd()) {
+                            current_path = path_pos.A6;
+                        }
+                    }
+                    break;
+                case A6:
+                    if (last_action == 6) {
+                        follower.followPath(paths.Path7);
+                        last_action = 7;
+                    } else {
+                        if (follower.atParametricEnd()) {
+                            current_path = path_pos.A7;
+                        }
+                    }
+                    break;
+                case A7:
+                    if (!has_diverted) {
+                        //divert left
+                        has_diverted = true;
+                        divert_time = System.currentTimeMillis();
+                        diverterDirection = DiverterDirection.LEFT;
+                        diverter.setPosition(LEFT_POSITION);
+                    }
+                    if (divert_time + divert_wait <= System.currentTimeMillis()) {
+                        if (last_action == 2) {
+                            follower.followPath(paths.Path8);
+                            last_action = 3;
+                        } else {
+                            if (follower.atParametricEnd()) {
+                                current_path = path_pos.A8;
+                            }
+                        }
+                    }
+                    break;
+                case A8:
+                    has_diverted = false;
+                    if (last_action == 3) {
+                        follower.followPath(paths.Path9);
+                        last_action = 4;
+                    } else {
+                        if (follower.atParametricEnd()) {
+                            current_path = path_pos.end;
+                        }
+                    }
+                    break;
+                case end:
+                    //purple left, green purple right
+                    if (fire == 0) {
+                        if (obelisk == 21) {
+                            launchRight(true);
+                            launchLeft(true);
+                            launchRight(true);
+                        }
+                        if (obelisk == 22) {
+                            launchLeft(true);
+                            launchRight(true);
+                            launchLeft(true);
+                        }
+                        if (obelisk == 23) {
+                            launchRight(true);
+                            launchRight(true);
+                            launchLeft(true);
+                        }
+                        fire = 1;
+                    }
+                    break;
+            }
+        }
+    }
+
+    public class Blue_A1_Paths {
+        int translational_offset = 4;
+        int rotational_offset = 20;
+        private Follower follower;
+        public PathChain Path1;
+        public PathChain Path2;
+        public PathChain Path3;
+        public PathChain Path4;
+        public PathChain Path5;
+        public PathChain Path6;
+        public PathChain Path7;
+        public PathChain Path8;
+        public PathChain Path9;
+
+        public Blue_A1_Paths(Follower follower) {
+            Path1 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(56.000+translational_offset, 8.000).mirror(), new Pose(62.355+translational_offset, 14.579).mirror())
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(90+rotational_offset), Math.toRadians(66+rotational_offset))
+                    .build();
+
+            Path2 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(62.355+translational_offset, 14.579).mirror(), new Pose(52.486+translational_offset, 36.336).mirror())
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(66+rotational_offset), Math.toRadians(0+rotational_offset))
+                    .build();
+
+            Path3 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(52.486+translational_offset, 36.336).mirror(), new Pose(36.561+translational_offset, 35.664).mirror())
+                    )
+                    .setConstantHeadingInterpolation(Math.toRadians(0+rotational_offset))
+                    .build();
+
+            Path4 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(36.561+translational_offset, 35.664).mirror(), new Pose(12.785+translational_offset, 34.991).mirror())
+                    )
+                    .setConstantHeadingInterpolation(Math.toRadians(0+rotational_offset))
+                    .build();
+
+            Path5 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(12.785+translational_offset, 34.991).mirror(), new Pose(62.355+translational_offset, 14.579).mirror())
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(0+rotational_offset), Math.toRadians(66+rotational_offset))
+                    .build();
+
+            Path6 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(62.355+translational_offset, 14.579).mirror(), new Pose(53.832+translational_offset, 60.112).mirror())
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(114+rotational_offset), Math.toRadians(0+rotational_offset))
+                    .build();
+
+            Path7 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(53.832+translational_offset, 60.112).mirror(), new Pose(39.028+translational_offset, 60.112).mirror())
+                    )
+                    .setConstantHeadingInterpolation(Math.toRadians(0+rotational_offset))
+                    .build();
+
+            Path8 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierLine(new Pose(39.028+translational_offset, 60.112).mirror(), new Pose(12.561+translational_offset, 60.336).mirror())
+                    )
+                    .setConstantHeadingInterpolation(Math.toRadians(0+rotational_offset))
+                    .build();
+
+            Path9 = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierCurve(
+                                    new Pose(12.561+translational_offset, 60.336),
+                                    new Pose(11.664+translational_offset, 78.280),
+                                    new Pose(93.757+translational_offset, 85.458),
+                                    new Pose(50.019+translational_offset, 112.374)
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(0+rotational_offset), Math.toRadians(66+rotational_offset))
+                    .build();
+        }
+    }
+    void launchLeft(boolean shotRequested) {
+        switch (leftLaunchState) {
+            case IDLE:
+                if (shotRequested) {
+                    leftLaunchState = LaunchState.SPIN_UP;
+                }
+                break;
+            case SPIN_UP:
+                leftLauncher.setVelocity(launcherTarget);
+                rightLauncher.setVelocity(launcherTarget);
+                if (leftLauncher.getVelocity() > launcherMin) {
+                    leftLaunchState = LaunchState.LAUNCH;
+                }
+                break;
+            case LAUNCH:
+                leftFeeder.setPower(-FULL_SPEED);
+                leftFeederTimer.reset();
+                leftLaunchState = LaunchState.LAUNCHING;
+                break;
+            case LAUNCHING:
+                if (leftFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                    leftLaunchState = LaunchState.IDLE;
+                    leftFeeder.setPower(STOP_SPEED);
+                }
+                break;
+        }
+    }
+
+    void launchRight(boolean shotRequested) {
+        switch (rightLaunchState) {
+            case IDLE:
+                if (shotRequested) {
+                    rightLaunchState = LaunchState.SPIN_UP;
+                }
+                break;
+            case SPIN_UP:
+                leftLauncher.setVelocity(launcherTarget);
+                rightLauncher.setVelocity(launcherTarget);
+                if (leftLauncher.getVelocity() > launcherMin) {
+                    rightLaunchState = LaunchState.LAUNCH;
+                }
+                break;
+            case LAUNCH:
+                rightFeeder.setPower(-FULL_SPEED);
+                rightFeederTimer.reset();
+                rightLaunchState = LaunchState.LAUNCHING;
+                break;
+            case LAUNCHING:
+                if (rightFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                    rightLaunchState = LaunchState.IDLE;
+                    rightFeeder.setPower(STOP_SPEED);
+                }
+                break;
+        }
     }
 }
 class Drawing {
@@ -316,13 +1405,14 @@ class Aim_Assist extends OpMode {
     double rightBackPower;
 
     public enum path_pos {
+        Start,
         A1,
         A2,
         A3,
         A4,
         end,
     }
-    public Blue_A1.path_pos current_path = Blue_A1.path_pos.Start;
+    public path_pos current_path = path_pos.Start;
     public boolean launched = false;
     public Limelight3A limelight;
     public int obelisk = 0;
@@ -427,7 +1517,7 @@ class Aim_Assist extends OpMode {
 
     }}
 }
-class Blue_A1 extends OpMode{
+class Testing_Blue_A1 extends OpMode{
     final double FEED_TIME_SECONDS = 1.45; //The feeder servos run this long when a shot is requested.
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
     final double FULL_SPEED = 1.0;
@@ -649,7 +1739,7 @@ class Blue_A1 extends OpMode{
                     //logic for shooting correct
                     //two purple left one green right
                     follower.turnTo(Math.toRadians(134));
-                    follower.pausePathFollowing();
+
                     if (obelisk == 21) {
                         //green purple purple
                         launchRight(true);
@@ -781,7 +1871,7 @@ class Blue_A1 extends OpMode{
             Path1 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(67.354, 0.312), new Pose(56.577, 28.151))
+                            new BezierLine(new Pose(67.354+4, 0.312), new Pose(56.577+4, 28.151))
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(200))
                     .build();
@@ -789,7 +1879,7 @@ class Blue_A1 extends OpMode{
             Path2 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(56.577, 28.151), new Pose(36.147, 29.947))
+                            new BezierLine(new Pose(56.577+4, 28.151), new Pose(36.147+4, 29.947))
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(200))
                     .build();
@@ -797,7 +1887,7 @@ class Blue_A1 extends OpMode{
             Path3 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(36.147, 29.947), new Pose(15.267, 29.723))
+                            new BezierLine(new Pose(36.147+4, 29.947), new Pose(15.267+4, 29.723))
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(200))
                     .build();
@@ -805,7 +1895,7 @@ class Blue_A1 extends OpMode{
             Path4 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(15.267, 29.723), new Pose(65.333, 10.639))
+                            new BezierLine(new Pose(15.267+4, 29.723), new Pose(65.333+4, 10.639))
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(200), Math.toRadians(134))
                     .build();

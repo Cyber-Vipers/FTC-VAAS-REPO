@@ -183,7 +183,7 @@ public class Competition_Teleop extends OpMode {
 
         leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
         rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
-
+        
         /*
          * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
          * both work to feed the ball into the robot.
@@ -261,17 +261,6 @@ public class Competition_Teleop extends OpMode {
                 last_divert_time = System.currentTimeMillis();
             }
         }
-        if (gamepad1.dpadUpWasPressed()) {
-            launcherDistance = LauncherDistance.FAR;
-            launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY;
-            launcherMin = LAUNCHER_FAR_MIN_VELOCITY;
-        }
-        if (gamepad1.dpadDownWasPressed()) {
-            launcherDistance = LauncherDistance.CLOSE;
-            launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY;
-            launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
-
-        }
 
 
         /*
@@ -330,7 +319,15 @@ public class Competition_Teleop extends OpMode {
 
         //Slow Mode
         if (gamepad1.right_bumper) {
-            slowMode = !slowMode;
+            if (launcherDistance == LauncherDistance.FAR) {
+                launcherDistance = LauncherDistance.CLOSE;
+                launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY;
+                launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
+            } else {
+                launcherDistance = LauncherDistance.FAR;
+                launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY;
+                launcherMin = LAUNCHER_FAR_MIN_VELOCITY;
+            }
         }
     }
 
