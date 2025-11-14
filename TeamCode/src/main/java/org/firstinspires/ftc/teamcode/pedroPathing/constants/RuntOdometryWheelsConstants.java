@@ -47,7 +47,7 @@ public class RuntOdometryWheelsConstants {
             .hardwareMapName("pinpoint")
 
             .encoderResolution(
-                    GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD
+                    GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD
             )
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
