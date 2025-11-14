@@ -41,8 +41,8 @@ public class RuntOdometryWheelsConstants {
             .yVelocity(11920);
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
-            .forwardPodY(7)
-            .strafePodX(0.3)
+            .forwardPodY(3.75)
+            .strafePodX(3.75)
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
 
