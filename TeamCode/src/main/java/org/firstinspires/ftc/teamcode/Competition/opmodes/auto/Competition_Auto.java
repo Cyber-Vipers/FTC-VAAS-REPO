@@ -361,7 +361,6 @@ class Blue_Auto_1 extends OpMode{
                         }
                         break;
                     }
-
                 case A1:
                     fire = 0;
                     if (last_action == 1) {
@@ -431,6 +430,7 @@ class Blue_Auto_1 extends OpMode{
                             launchLeft(true);
                         }
                         fire = 1;
+                        last_fire_time = System.currentTimeMillis();
                     } else {
                         if (System.currentTimeMillis() >= last_fire_time + fire_pause) {
                             fire = 1;
@@ -516,9 +516,8 @@ class Blue_Auto_1 extends OpMode{
     }
 
     public class Blue_A1_Paths {
-        int translational_offset = 6;
-        int lateral_offset = 4;
-        int rotational_offset = 20;
+        int translational_offset = 0;
+        int rotational_offset = 0;
         private Follower follower;
         public PathChain Path1;
         public PathChain Path2;
@@ -534,7 +533,7 @@ class Blue_Auto_1 extends OpMode{
             Path1 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(56.000+translational_offset, 8.000+lateral_offset), new Pose(62.355+translational_offset, 14.579+lateral_offset))
+                            new BezierLine(new Pose(56.000+translational_offset, 8.000), new Pose(62.355+translational_offset, 14.579))
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(90+rotational_offset), Math.toRadians(114+rotational_offset))
                     .build();
@@ -542,7 +541,7 @@ class Blue_Auto_1 extends OpMode{
             Path2 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(62.355+translational_offset, 14.579+lateral_offset), new Pose(52.486+translational_offset, 36.336+lateral_offset))
+                            new BezierLine(new Pose(62.355+translational_offset, 14.579), new Pose(52.486+translational_offset, 36.336))
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(114+rotational_offset), Math.toRadians(180+rotational_offset))
                     .build();
@@ -550,7 +549,7 @@ class Blue_Auto_1 extends OpMode{
             Path3 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(52.486+translational_offset, 36.336+lateral_offset), new Pose(52.486+translational_offset, 35.664+lateral_offset))
+                            new BezierLine(new Pose(52.486+translational_offset, 36.336), new Pose(36.561+translational_offset, 35.664))
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(180+rotational_offset))
                     .build();
@@ -558,7 +557,7 @@ class Blue_Auto_1 extends OpMode{
             Path4 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(36.561+translational_offset, 35.664+lateral_offset), new Pose(12.785+translational_offset, 34.991+lateral_offset))
+                            new BezierLine(new Pose(36.561+translational_offset, 35.664), new Pose(12.785+translational_offset, 34.991))
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(180+rotational_offset))
                     .build();
@@ -566,7 +565,7 @@ class Blue_Auto_1 extends OpMode{
             Path5 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(12.785+translational_offset, 34.991+lateral_offset), new Pose(62.355+translational_offset, 14.579+lateral_offset))
+                            new BezierLine(new Pose(12.785+translational_offset, 34.991), new Pose(62.355+translational_offset, 14.579))
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(180+rotational_offset), Math.toRadians(114+rotational_offset))
                     .build();
@@ -574,7 +573,7 @@ class Blue_Auto_1 extends OpMode{
             Path6 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(62.355+translational_offset, 14.579+lateral_offset), new Pose(53.832+translational_offset, 60.112+lateral_offset))
+                            new BezierLine(new Pose(62.355+translational_offset, 14.579), new Pose(53.832+translational_offset, 60.112))
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(114+rotational_offset), Math.toRadians(180+rotational_offset))
                     .build();
@@ -582,7 +581,7 @@ class Blue_Auto_1 extends OpMode{
             Path7 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(53.832+translational_offset, 60.112+lateral_offset), new Pose(39.028+translational_offset, 60.112+lateral_offset))
+                            new BezierLine(new Pose(53.832+translational_offset, 60.112), new Pose(39.028+translational_offset, 60.112))
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(180+rotational_offset))
                     .build();
@@ -590,7 +589,7 @@ class Blue_Auto_1 extends OpMode{
             Path8 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(39.028+translational_offset, 60.112+lateral_offset), new Pose(12.561+translational_offset, 60.336+lateral_offset))
+                            new BezierLine(new Pose(39.028+translational_offset, 60.112), new Pose(12.561+translational_offset, 60.336))
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(180+rotational_offset))
                     .build();
@@ -599,10 +598,10 @@ class Blue_Auto_1 extends OpMode{
                     .pathBuilder()
                     .addPath(
                             new BezierCurve(
-                                    new Pose(12.561+translational_offset, 60.336+lateral_offset),
-                                    new Pose(11.664+translational_offset, 78.280+lateral_offset),
-                                    new Pose(93.757+translational_offset, 85.458+lateral_offset),
-                                    new Pose(50.019+translational_offset, 112.374+lateral_offset)
+                                    new Pose(12.561+translational_offset, 60.336),
+                                    new Pose(11.664+translational_offset, 78.280),
+                                    new Pose(93.757+translational_offset, 85.458),
+                                    new Pose(50.019+translational_offset, 112.374)
                             )
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(180+rotational_offset), Math.toRadians(140+rotational_offset))
@@ -759,7 +758,7 @@ class Red_Auto_1 extends OpMode{
     public path_pos current_path = path_pos.Start;
     public boolean launched = false;
     public Limelight3A limelight;
-    public int obelisk = 21;
+    public int obelisk = 0;
     public int launch_counter = 0;
     public long last_fire_time = 0;
     public limelight_thinker limelight_thinker;
@@ -1431,7 +1430,7 @@ class Aim_Assist extends OpMode {
     public path_pos current_path = path_pos.Start;
     public boolean launched = false;
     public Limelight3A limelight;
-    public int obelisk = 21;
+    public int obelisk = 0;
     public int launch_counter = 0;
     public limelight_thinker limelight_thinker;
     @Override
@@ -1618,7 +1617,7 @@ class Testing_Blue_A1 extends OpMode{
     public path_pos current_path = path_pos.Start;
     public boolean launched = false;
     public Limelight3A limelight;
-    public int obelisk = 21;
+    public int obelisk = 0;
     public int launch_counter = 0;
     public limelight_thinker limelight_thinker;
     @Override
