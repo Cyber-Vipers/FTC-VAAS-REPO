@@ -21,7 +21,7 @@ apply plugin: 'com.android.application'
 
 android {
 
-    compileSdkVersion 34
+    compileSdkVersion 34 // Was 30, 33+ currently required for PsiKit and 34+ required for Panels
 
     signingConfigs {
         release {
@@ -89,14 +89,14 @@ android {
             signingConfig signingConfigs.release
 
             ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a"
+//                abiFilters "armeabi-v7a", "arm64-v8a"
             }
         }
         debug {
             debuggable true
             jniDebuggable true
             ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a"
+//                abiFilters "armeabi-v7a", "arm64-v8a"
             }
         }
     }
@@ -110,6 +110,28 @@ android {
         pickFirst '**/*.so'
     }
     ndkVersion '21.3.6528147'
+
+    // The .map files for the various web stuff are shipped in the APK despite not being needed by
+    // teams.  (They are basically the web equivalent of debugging symbols, and teams aren't
+    // debugging the Javascript and CSS of the web pages hosted by the robot controller).
+    // Remove these files from from the APK to save ~2MB.
+    aaptOptions {
+        ignoreAssetsPattern "*.map"
+    }
+
+    // Including both arm32 and arm64 binaries in the APK takes up extra space, despite the fact
+    // that any given device will only use one of these.  However, at least some of
+    // the allowed robot controller phones run 32-bit Android, so we can't just only build arm64.
+    // Instead, build separate APKs for arm32 and arm64.  This saves ~8MB from each APK.
+    // https://developer.android.com/build/configure-apk-splits#configure-abi-split
+    splits {
+        abi {
+            enable true
+            reset()
+            include "arm64-v8a", "armeabi-v7a"
+            universalApk false
+        }
+    }
 }
 
 repositories {
