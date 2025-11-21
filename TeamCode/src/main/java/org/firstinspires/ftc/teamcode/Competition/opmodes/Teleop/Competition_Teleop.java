@@ -38,6 +38,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.Runt.opmodes.DecodeRi3D;
+import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntVisualConstants;
 
 import java.util.function.Supplier;
@@ -110,7 +111,7 @@ public class Competition_Teleop extends OpMode {
 
     private IntakeState intakeState = IntakeState.OFF;
 
-    private enum LauncherDistance {
+    public enum LauncherDistance {
         CLOSE,
         FAR;
     }
@@ -189,7 +190,7 @@ public class Competition_Teleop extends OpMode {
          * both work to feed the ball into the robot.
          */
         rightFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
-        follower = RuntVisualConstants.createFollower(hardwareMap);
+        follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
         follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
         follower.update();
         /*

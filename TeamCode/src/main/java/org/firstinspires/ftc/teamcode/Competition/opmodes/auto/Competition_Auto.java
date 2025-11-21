@@ -41,9 +41,11 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
+import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.draw;
 
 @Autonomous(name = "Competition Auto", group = "Competition")
 public class Competition_Auto extends SelectableOpMode {
+
 
     public static Follower follower;
 
@@ -106,9 +108,9 @@ class Red extends OpMode{
     @Override
     public void loop() {
     }
+
 }
-class Blue_Auto_1 extends OpMode{
-    //**PRELOAD MUST BE PURPLE ON RIGHT ONE GREEN ON LEFT**
+class JAuto extends OpMode{
     final double FEED_TIME_SECONDS = 1.45; //The feeder servos run this long when a shot is requested.
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
     final double FULL_SPEED = 1.0;
@@ -150,21 +152,21 @@ class Blue_Auto_1 extends OpMode{
         LAUNCH,
         LAUNCHING,
     }
-    private LaunchState leftLaunchState;
-    private LaunchState rightLaunchState;
+    private JAuto.LaunchState leftLaunchState;
+    private JAuto.LaunchState rightLaunchState;
 
     private enum DiverterDirection {
         LEFT,
         RIGHT;
     }
-    private DiverterDirection diverterDirection = DiverterDirection.LEFT;
+    private JAuto.DiverterDirection diverterDirection = JAuto.DiverterDirection.LEFT;
 
     private enum IntakeState {
         ON,
         OFF;
     }
 
-    private IntakeState intakeState = IntakeState.OFF;
+    private JAuto.IntakeState intakeState = JAuto.IntakeState.OFF;
 
     private enum LauncherDistance {
         CLOSE,
@@ -172,6 +174,411 @@ class Blue_Auto_1 extends OpMode{
     }
     private Follower follower;
     public static Pose startingPose = new Pose(56.5233644859813,8.29906542056074,90); //See ExampleAuto to understand how to use this
+    private boolean automatedDrive;
+    private JAuto.LauncherDistance launcherDistance = JAuto.LauncherDistance.CLOSE;
+
+    // Setup a variable for each drive wheel to save power level for telemetry
+    double leftFrontPower;
+    double rightFrontPower;
+    double leftBackPower;
+    double rightBackPower;
+
+    public int last_action = 0;
+    public enum path_pos {
+        Start,
+        FireStart,
+        A1,
+        A2,
+        A3,
+        A4,
+        A4Fire,
+        A5,
+        A6,
+        A7,
+        A8,
+        A9,
+        end,
+    }
+    public JAuto.path_pos current_path = JAuto.path_pos.Start;
+    public boolean launched = false;
+    public Limelight3A limelight;
+    public int obelisk = 21;
+    public int launch_counter = 0;
+    public long last_fire_time = 0;
+    public limelight_thinker limelight_thinker;
+    public boolean has_diverted = false;
+
+    @Override
+    public void init() {
+        limelight = hardwareMap.get(Limelight3A.class,"limelight");
+        limelight.setPollRateHz(100);
+        limelight.start();
+        telemetry.addLine("I'm Blue Bro");
+        leftLaunchState = JAuto.LaunchState.IDLE;
+        rightLaunchState = JAuto.LaunchState.IDLE;
+        limelight_thinker = new limelight_thinker(limelight);
+        leftFrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
+        rightFrontDrive = hardwareMap.get(DcMotor.class, "frontRight");
+        leftBackDrive = hardwareMap.get(DcMotor.class, "backLeft");
+        rightBackDrive = hardwareMap.get(DcMotor.class, "backRight");
+        leftLauncher = hardwareMap.get(DcMotorEx.class, "flywheelLeft");
+        rightLauncher = hardwareMap.get(DcMotorEx.class, "flywheelRight");
+        intake = hardwareMap.get(DcMotor.class, "rollerIntake");
+        leftFeeder = hardwareMap.get(CRServo.class, "indexLeft");
+        rightFeeder = hardwareMap.get(CRServo.class, "indexRight");
+        diverter = hardwareMap.get(Servo.class, "modulator");
+        telemetry.addLine("new");
+        /*
+         * To drive forward, most robots need the motor on one side to be reversed,
+         * because the axles point in opposite directions. Pushing the left stick forward
+         * MUST make robot go forward. So adjust these two lines based on your first test drive.
+         * Note: The settings here assume direct drive on left and right wheels. Gear
+         * Reduction or 90 Deg drives may require direction flips
+         */
+        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
+
+        leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        intake.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        leftLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        /*
+         * Setting zeroPowerBehavior to BRAKE enables a "brake mode". This causes the motor to
+         * slow down much faster when it is coasting. This creates a much more controllable
+         * drivetrain. As the robot stops much quicker.
+         */
+        leftFrontDrive.setZeroPowerBehavior(BRAKE);
+        rightFrontDrive.setZeroPowerBehavior(BRAKE);
+        leftBackDrive.setZeroPowerBehavior(BRAKE);
+        rightBackDrive.setZeroPowerBehavior(BRAKE);
+        leftLauncher.setZeroPowerBehavior(BRAKE);
+        rightLauncher.setZeroPowerBehavior(BRAKE);
+
+        /*
+         * set Feeders to an initial value to initialize the servo controller
+         */
+        leftFeeder.setPower(STOP_SPEED);
+        rightFeeder.setPower(STOP_SPEED);
+
+        leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
+        rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
+
+        /*
+         * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
+         * both work to feed the ball into the robot.
+         */
+        rightFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
+        follower = RuntVisualConstants.createFollower(hardwareMap);
+        follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
+        follower.update();
+        /*
+         * Tell the driver that initialization is complete.
+         */
+        telemetry.addData("Status", "Initialized");
+    }
+    public int fire = 0;
+    public static final double ROBOT_RADIUS = 9; // woah
+
+    public long fire_pause = 7000;
+    public boolean obelisk_changed = false;
+    public long divert_time = 0;
+    public long divert_wait = 1000;
+    JAuto paths;
+    @Override
+    public void start() {
+
+        intakeState = JAuto.IntakeState.ON;
+        diverterDirection = JAuto.DiverterDirection.LEFT;
+        diverter.setPosition(LEFT_POSITION);
+        intake.setPower(1);
+    }
+
+
+    @Override
+    public void loop(){
+        follower.update();
+        telemetry.update();
+        telemetry.addData("Current ", current_path.name());
+        telemetry.addData("Fire condition ", System.currentTimeMillis() + fire_pause > last_fire_time);
+        telemetry.addData("Divert condition ", System.currentTimeMillis() + divert_wait > divert_time);
+        telemetry.addData("Divert Position ", diverterDirection.name());
+        telemetry.addData("Intake State ", intakeState.name());
+        telemetry.addData("Follower Busy? ", follower.isBusy());
+        telemetry.addData("Obelisk ", obelisk);
+        telemetry.addData("Obelisk Changed? ", obelisk_changed);
+        if (!follower.isBusy()) {
+            switch (current_path) {
+
+            }
+        }
+    }
+    public class JAuto_Paths {
+
+
+    }
+}
+
+class CarpI1 extends OpMode{
+    //**PRELOAD MUST BE PURPLE ON RIGHT ONE GREEN ON LEFT**
+    final double FEED_TIME_SECONDS = 1.45; //The feeder servos run this long when a shot is requested.
+    final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
+    final double FULL_SPEED = 1.0;
+
+    final double LAUNCHER_CLOSE_TARGET_VELOCITY = 1200; //in ticks/second for the close goal.
+    final double LAUNCHER_CLOSE_MIN_VELOCITY = 1175; //minimum required to start a shot for close goal.
+    private boolean slowMode = false;
+    private boolean correct_me = false;
+    private double slowModeMultiplier = 0.5;
+    final double LAUNCHER_FAR_TARGET_VELOCITY = 1350; //Target velocity for far goal
+    final double LAUNCHER_FAR_MIN_VELOCITY = 1325; //minimum required to start a shot for far goal.
+
+    double launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY; //These variables allow
+    double launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
+
+    final double LEFT_POSITION = 0.2962; //the left and right position for the diverter servo
+    final double RIGHT_POSITION = 0;
+
+    // Declare OpMode members.
+    private DcMotor leftFrontDrive = null;
+    private DcMotor rightFrontDrive = null;
+    private DcMotor leftBackDrive = null;
+    private DcMotor rightBackDrive = null;
+    private DcMotorEx leftLauncher = null;
+    private DcMotorEx rightLauncher = null;
+    private DcMotor intake = null;
+    private CRServo leftFeeder = null;
+    private CRServo rightFeeder = null;
+    private Servo diverter = null;
+    private Supplier<PathChain> pathChain;
+    private Supplier<PathChain> rot;
+    ElapsedTime leftFeederTimer = new ElapsedTime();
+    ElapsedTime rightFeederTimer = new ElapsedTime();
+
+
+    enum LaunchState {
+        IDLE,
+        SPIN_UP,
+        LAUNCH,
+        LAUNCHING,
+    }
+    private Blue_Auto_1.LaunchState leftLaunchState;
+    private Blue_Auto_1.LaunchState rightLaunchState;
+
+    enum DiverterDirection {
+        LEFT,
+        RIGHT;
+    }
+    private Blue_Auto_1.DiverterDirection diverterDirection = Blue_Auto_1.DiverterDirection.LEFT;
+
+    enum IntakeState {
+        ON,
+        OFF;
+    }
+
+    private Blue_Auto_1.IntakeState intakeState = Blue_Auto_1.IntakeState.OFF;
+
+    enum LauncherDistance {
+        CLOSE,
+        FAR;
+    }
+    private Follower follower;
+    public static Pose startingPose = new Pose(56.5233644859813,8.29906542056074,90); //See ExampleAuto to understand how to use this
+    private boolean automatedDrive;
+    private Blue_Auto_1.LauncherDistance launcherDistance = Blue_Auto_1.LauncherDistance.CLOSE;
+
+    // Setup a variable for each drive wheel to save power level for telemetry
+    double leftFrontPower;
+    double rightFrontPower;
+    double leftBackPower;
+    double rightBackPower;
+
+    public int last_action = 0;
+    public enum path_pos {
+        Start,
+        FireStart,
+        A1,
+        A2,
+        A3,
+        A4,
+        A4Fire,
+        A5,
+        A6,
+        A7,
+        A8,
+        A9,
+        end,
+    }
+    public Blue_Auto_1.path_pos current_path = Blue_Auto_1.path_pos.Start;
+    public boolean launched = false;
+    public Limelight3A limelight;
+    public int obelisk = 21;
+    public int launch_counter = 0;
+    public long last_fire_time = 0;
+    public limelight_thinker limelight_thinker;
+    public boolean has_diverted = false;
+
+    @Override
+    public void init() {
+        limelight = hardwareMap.get(Limelight3A.class,"limelight");
+        limelight.setPollRateHz(100);
+        limelight.start();
+        telemetry.addLine("I'm Blue Bro");
+        leftLaunchState = Blue_Auto_1.LaunchState.IDLE;
+        rightLaunchState = Blue_Auto_1.LaunchState.IDLE;
+        limelight_thinker = new limelight_thinker(limelight);
+        leftFrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
+        rightFrontDrive = hardwareMap.get(DcMotor.class, "frontRight");
+        leftBackDrive = hardwareMap.get(DcMotor.class, "backLeft");
+        rightBackDrive = hardwareMap.get(DcMotor.class, "backRight");
+        leftLauncher = hardwareMap.get(DcMotorEx.class, "flywheelLeft");
+        rightLauncher = hardwareMap.get(DcMotorEx.class, "flywheelRight");
+        intake = hardwareMap.get(DcMotor.class, "rollerIntake");
+        leftFeeder = hardwareMap.get(CRServo.class, "indexLeft");
+        rightFeeder = hardwareMap.get(CRServo.class, "indexRight");
+        diverter = hardwareMap.get(Servo.class, "modulator");
+        telemetry.addLine("new");
+        /*
+         * To drive forward, most robots need the motor on one side to be reversed,
+         * because the axles point in opposite directions. Pushing the left stick forward
+         * MUST make robot go forward. So adjust these two lines based on your first test drive.
+         * Note: The settings here assume direct drive on left and right wheels. Gear
+         * Reduction or 90 Deg drives may require direction flips
+         */
+        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
+
+        leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        intake.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        leftLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        /*
+         * Setting zeroPowerBehavior to BRAKE enables a "brake mode". This causes the motor to
+         * slow down much faster when it is coasting. This creates a much more controllable
+         * drivetrain. As the robot stops much quicker.
+         */
+        leftFrontDrive.setZeroPowerBehavior(BRAKE);
+        rightFrontDrive.setZeroPowerBehavior(BRAKE);
+        leftBackDrive.setZeroPowerBehavior(BRAKE);
+        rightBackDrive.setZeroPowerBehavior(BRAKE);
+        leftLauncher.setZeroPowerBehavior(BRAKE);
+        rightLauncher.setZeroPowerBehavior(BRAKE);
+
+        /*
+         * set Feeders to an initial value to initialize the servo controller
+         */
+        leftFeeder.setPower(STOP_SPEED);
+        rightFeeder.setPower(STOP_SPEED);
+
+        leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
+        rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
+
+        /*
+         * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
+         * both work to feed the ball into the robot.
+         */
+        rightFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
+        follower = RuntVisualConstants.createFollower(hardwareMap);
+        follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
+        follower.update();
+        /*
+         * Tell the driver that initialization is complete.
+         */
+        telemetry.addData("Status", "Initialized");
+    }
+    public int fire = 0;
+    public long fire_pause = 7000;
+    public boolean obelisk_changed = false;
+    public long divert_time = 0;
+    public long divert_wait = 1000;
+
+    @Override
+    public void loop() {
+        switch (current_path) {
+            case Start:
+                if (last_action == 0) {
+                    
+                }
+                break;
+        }
+    }
+}
+
+class Blue_Auto_1 extends OpMode{
+    //**PRELOAD MUST BE PURPLE ON RIGHT ONE GREEN ON LEFT**
+    final double FEED_TIME_SECONDS = 1.45; //The feeder servos run this long when a shot is requested.
+    private static final FieldManager panelsField = PanelsField.INSTANCE.getField();
+    final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
+    final double FULL_SPEED = 1.0;
+
+    final double LAUNCHER_CLOSE_TARGET_VELOCITY = 1200; //in ticks/second for the close goal.
+    final double LAUNCHER_CLOSE_MIN_VELOCITY = 1175; //minimum required to start a shot for close goal.
+    private boolean slowMode = false;
+    private boolean correct_me = false;
+    private double slowModeMultiplier = 0.5;
+    final double LAUNCHER_FAR_TARGET_VELOCITY = 1350; //Target velocity for far goal
+    final double LAUNCHER_FAR_MIN_VELOCITY = 1325; //minimum required to start a shot for far goal.
+
+    double launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY; //These variables allow
+    double launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
+
+    final double LEFT_POSITION = 0.2962; //the left and right position for the diverter servo
+    final double RIGHT_POSITION = 0;
+
+    // Declare OpMode members.
+    private DcMotor leftFrontDrive = null;
+    private DcMotor rightFrontDrive = null;
+    private DcMotor leftBackDrive = null;
+    private DcMotor rightBackDrive = null;
+    private DcMotorEx leftLauncher = null;
+    private DcMotorEx rightLauncher = null;
+    private DcMotor intake = null;
+    private CRServo leftFeeder = null;
+    private CRServo rightFeeder = null;
+    private Servo diverter = null;
+    private Supplier<PathChain> pathChain;
+    private Supplier<PathChain> rot;
+    ElapsedTime leftFeederTimer = new ElapsedTime();
+    ElapsedTime rightFeederTimer = new ElapsedTime();
+
+
+    enum LaunchState {
+        IDLE,
+        SPIN_UP,
+        LAUNCH,
+        LAUNCHING,
+    }
+    private LaunchState leftLaunchState;
+    private LaunchState rightLaunchState;
+
+    enum DiverterDirection {
+        LEFT,
+        RIGHT;
+    }
+    private DiverterDirection diverterDirection = DiverterDirection.LEFT;
+
+    enum IntakeState {
+        ON,
+        OFF;
+    }
+
+    private IntakeState intakeState = IntakeState.OFF;
+
+    enum LauncherDistance {
+        CLOSE,
+        FAR;
+    }
+    private Follower follower;
+    public static Pose startingPose = new Pose(68,1,90); //See ExampleAuto to understand how to use this
     private boolean automatedDrive;
     private LauncherDistance launcherDistance = LauncherDistance.CLOSE;
 
@@ -205,7 +612,25 @@ class Blue_Auto_1 extends OpMode{
     public long last_fire_time = 0;
     public limelight_thinker limelight_thinker;
     public boolean has_diverted = false;
+    public static void drawRobot(Pose pose, Style style) {
+        if (pose == null || Double.isNaN(pose.getX()) || Double.isNaN(pose.getY()) || Double.isNaN(pose.getHeading())) {
+            return;
+        }
 
+
+        panelsField.setStyle(style);
+        panelsField.moveCursor(pose.getX(), pose.getY());
+        panelsField.circle(Drawing.ROBOT_RADIUS);
+
+        Vector v = pose.getHeadingAsUnitVector();
+        v.setMagnitude(v.getMagnitude() * Drawing.ROBOT_RADIUS);
+        double x1 = pose.getX() + v.getXComponent() / 2, y1 = pose.getY() + v.getYComponent() / 2;
+        double x2 = pose.getX() + v.getXComponent(), y2 = pose.getY() + v.getYComponent();
+
+        panelsField.setStyle(style);
+        panelsField.moveCursor(x1, y1);
+        panelsField.line(x2, y2);
+    }
     @Override
     public void init() {
         limelight = hardwareMap.get(Limelight3A.class,"limelight");
@@ -295,10 +720,13 @@ class Blue_Auto_1 extends OpMode{
         intake.setPower(1);
     }
 
-
+    private static final Style robotLook = new Style(
+            "", "#3F51B5", 0.75
+    );
     @Override
     public void loop() {
         follower.update();
+        drawRobot(follower.getPose(),robotLook);
         telemetry.update();
         telemetry.addData("Current ", current_path.name());
         telemetry.addData("Fire condition ", System.currentTimeMillis() + fire_pause > last_fire_time);
@@ -309,6 +737,7 @@ class Blue_Auto_1 extends OpMode{
         telemetry.addData("Obelisk ", obelisk);
         telemetry.addData("Obelisk Changed? ", obelisk_changed);
         if (!follower.isBusy()) {
+
             switch (current_path) {
                 case Start:
                     if (last_action == 0) {
@@ -328,7 +757,7 @@ class Blue_Auto_1 extends OpMode{
                         double ty = result.getTy();
                         double ta = result.getTa();
                         for (LLResultTypes.FiducialResult april : result.getFiducialResults()) {
-                            if (april.getFiducialId() != 20 || april.getFiducialId() != 24) {
+                            if (april.getFiducialId() != 20 & april.getFiducialId() != 24) {
                                 obelisk = april.getFiducialId();
                                 obelisk_changed = true;
                             }
@@ -413,6 +842,7 @@ class Blue_Auto_1 extends OpMode{
                     }
                     break;
                 case A4Fire:
+                    telemetry.addLine("Running Firestart");
                     if (fire == 0) {
                         if (obelisk == 21) {
                             launchLeft(true);
@@ -430,15 +860,16 @@ class Blue_Auto_1 extends OpMode{
                             launchLeft(true);
                         }
                         fire = 1;
-                        last_fire_time = System.currentTimeMillis();
+                        last_fire_time = System.currentTimeMillis() ;
+                        break;
                     } else {
-                        if (System.currentTimeMillis() >= last_fire_time + fire_pause) {
+                        if (System.currentTimeMillis() > last_fire_time + fire_pause) {
                             fire = 1;
                             last_fire_time = System.currentTimeMillis();
-                            current_path = path_pos.A5;
+                            current_path = path_pos.A1;
                         }
+                        break;
                     }
-                    break;
                 case A5:
                     fire = 0;
                     if (last_action == 5) {
@@ -533,78 +964,82 @@ class Blue_Auto_1 extends OpMode{
             Path1 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(56.000+translational_offset, 8.000), new Pose(62.355+translational_offset, 14.579))
+                            new BezierLine(new Pose(68.000, 1.000), new Pose(62.355, 14.579))
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(90+rotational_offset), Math.toRadians(114+rotational_offset))
+                    .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(114))
                     .build();
 
             Path2 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(62.355+translational_offset, 14.579), new Pose(52.486+translational_offset, 36.336))
+                            new BezierLine(new Pose(62.355, 14.579), new Pose(52.486, 36.336))
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(114+rotational_offset), Math.toRadians(180+rotational_offset))
+                    .setLinearHeadingInterpolation(Math.toRadians(114), Math.toRadians(180))
                     .build();
 
             Path3 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(52.486+translational_offset, 36.336), new Pose(36.561+translational_offset, 35.664))
+                            new BezierLine(new Pose(52.486, 36.336), new Pose(36.561, 35.664))
                     )
-                    .setConstantHeadingInterpolation(Math.toRadians(180+rotational_offset))
+                    .setConstantHeadingInterpolation(Math.toRadians(180))
                     .build();
 
             Path4 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(36.561+translational_offset, 35.664), new Pose(12.785+translational_offset, 34.991))
+                            new BezierLine(new Pose(36.561, 35.664), new Pose(18.859, 34.438))
                     )
-                    .setConstantHeadingInterpolation(Math.toRadians(180+rotational_offset))
+                    .setConstantHeadingInterpolation(Math.toRadians(180))
                     .build();
 
             Path5 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(12.785+translational_offset, 34.991), new Pose(62.355+translational_offset, 14.579))
+                            new BezierLine(new Pose(18.859, 34.438), new Pose(62.355, 13.579))
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(180+rotational_offset), Math.toRadians(114+rotational_offset))
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(114))
                     .build();
 
             Path6 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(62.355+translational_offset, 14.579), new Pose(53.832+translational_offset, 60.112))
+                            new BezierCurve(
+                                    new Pose(62.355, 13.579),
+                                    new Pose(28.513, 21.640),
+                                    new Pose(41.535, 61.379)
+                            )
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(114+rotational_offset), Math.toRadians(180+rotational_offset))
+                    .setLinearHeadingInterpolation(Math.toRadians(114), Math.toRadians(180))
                     .build();
 
             Path7 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(53.832+translational_offset, 60.112), new Pose(39.028+translational_offset, 60.112))
+                            new BezierLine(new Pose(41.535, 61.379), new Pose(24.023, 60.930))
                     )
-                    .setConstantHeadingInterpolation(Math.toRadians(180+rotational_offset))
+                    .setConstantHeadingInterpolation(Math.toRadians(180))
                     .build();
 
             Path8 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(39.028+translational_offset, 60.112), new Pose(12.561+translational_offset, 60.336))
+                            new BezierLine(new Pose(24.023, 60.930), new Pose(12.561, 60.112))
                     )
-                    .setConstantHeadingInterpolation(Math.toRadians(180+rotational_offset))
+                    .setConstantHeadingInterpolation(Math.toRadians(180))
                     .build();
 
             Path9 = follower
                     .pathBuilder()
                     .addPath(
                             new BezierCurve(
-                                    new Pose(12.561+translational_offset, 60.336),
-                                    new Pose(11.664+translational_offset, 78.280),
-                                    new Pose(93.757+translational_offset, 85.458),
-                                    new Pose(50.019+translational_offset, 112.374)
+                                    new Pose(12.561, 60.112),
+                                    new Pose(20.667, 94.600),
+                                    new Pose(50.019, 112.374),
+                                    new Pose(51.081, 108.882)
                             )
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(180+rotational_offset), Math.toRadians(140+rotational_offset))
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(140))
                     .build();
         }
     }
