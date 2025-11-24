@@ -34,6 +34,7 @@ public class RuntOdometryWheelsConstants {
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
             .xVelocity(78.88812063622663)
+            .maxPower(0.5)
             .yVelocity(64.22306955893208);
 
     public static PinpointConstants localizerConstants = new PinpointConstants()

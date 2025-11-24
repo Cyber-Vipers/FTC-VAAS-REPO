@@ -32,6 +32,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.Competition.opmodes.Teleop.Competition_Teleop;
 import org.firstinspires.ftc.teamcode.Competition.sensors.limelight_thinker;
 import org.firstinspires.ftc.teamcode.pedroPathing.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntVisualConstants;
 import org.firstinspires.ftc.teamcode.tools.Detection;
 import org.json.JSONArray;
@@ -696,7 +697,7 @@ class Blue_Auto_1 extends OpMode{
          * both work to feed the ball into the robot.
          */
         rightFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
-        follower = RuntVisualConstants.createFollower(hardwareMap);
+        follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
         follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
         follower.update();
         /*
