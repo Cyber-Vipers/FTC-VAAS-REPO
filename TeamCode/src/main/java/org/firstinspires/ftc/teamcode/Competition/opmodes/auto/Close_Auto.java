@@ -24,6 +24,7 @@ import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 @Autonomous(name = "Close Auto")
 public class Close_Auto extends OpMode {
     //**PRELOAD MUST BE PURPLE ON RIGHT ONE GREEN ON LEFT**
+    //TODO Fix Shooting, Finish Bottom parts of functionality, as listed with other TODOS
     public int loops = 0;
     private enum LaunchState {
         IDLE,
@@ -135,7 +136,10 @@ public class Close_Auto extends OpMode {
          */
 
         rightFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
+        //*‼️QUICK RULE OF THUMB‼️* Make sure to use the correct constants!
+        //(❁´◡`❁)
         follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
+        //*‼️QUICK RULE OF THUMB‼️* Make sure to set starting pose with the following format, Double Double Radians
         follower.setStartingPose(new Pose(127.52329576522467,125.1409210488048,Math.toRadians(35)));
         follower.update();
         Ze_Paths = new Da_Paths(follower);
@@ -145,49 +149,61 @@ public class Close_Auto extends OpMode {
         telemetry.addData("Status", "Initialized");
     }
     public enum paths {
-        A1,
-        A2,
-        A2FIRE,
-        A3,
-        A4,
-        A5,
-        A6,
-        A6Fire,
-        A7,
-        A8,
-        A9,
-        A10,
+        Path1,
+        Path2,
+        Path2FIRE,
+        Path3,
+        Path4,
+        Path5,
+        Path6,
+        Path6Fire,
+        Path7,
+        Path8,
+        Path9,
+        Path10,
         end
     }
+    // Initialize Da_Paths first to avoid having to remake it every loop
     public Da_Paths Ze_Paths;
-    public paths currentpath = paths.A1;
+    // We need to set initial state, change it during runtime or before to set states
+    public paths currentpath = paths.Path1;
+    // Just so we know if it reads
     public boolean obelisk_changed;
     public int obelisk = 21;
+    // This is a long, 6000 = 6 seconds
     public long fire_wait = 6000;
+    // To be changed during runtime
     public long last_fire_time = 0;
     public int fire = 0;
     @Override
     public void loop() {
+        // We log both Launcher Velocities
         telemetry.addData("Right Launcher", rightLauncher.getVelocity());
         telemetry.addData("Left Launcher", leftLauncher.getVelocity());
+        // We ALWAYS keep motors spinned up along with Intake
         leftLauncher.setVelocity(launcherTarget);
         rightLauncher.setVelocity(launcherTarget);
         intake.setPower(1);
         follower.update();
         telemetry.addData("Heading", Math.toDegrees(follower.getHeading()));
         telemetry.addData("Pose", follower.getPose());
-        if ((currentpath != paths.A2FIRE && currentpath != paths.A6Fire && currentpath != paths.end)) {
-            telemetry.addData("Conditional", (currentpath != paths.A2FIRE || currentpath != paths.A6Fire || currentpath != paths.end));
+        // Only index during the correct states
+        // These States being Path2Fire, Path6Fire, and End
+        // TODO Make it actually aim
+        if ((currentpath != paths.Path2FIRE && currentpath != paths.Path6Fire && currentpath != paths.end)) {
+            telemetry.addData("Conditional", (currentpath != paths.Path2FIRE || currentpath != paths.Path6Fire || currentpath != paths.end));
             leftFeeder.setPower(0);
             rightFeeder.setPower(0);
         }
+        // ️️ ‼️*Quick Rule of Thumb*‼️ Only follow new path at parametric end, and do not find parametric end at start of loop
         switch (currentpath) {
-            case A1:
+            case Path1:
+                //Divert to right, follow path 1, then read obelisk
                 diverterDirection = DiverterDirection.RIGHT;
                 diverter.setPosition(RIGHT_POSITION);
                 if (loops == 0) {
                     follower.followPath(Ze_Paths.Path1);
-                    currentpath = paths.A2;
+                    currentpath = paths.Path2;
                 }
                 LLResult result = limelight.getLatestResult();
                 if (result != null && result.isValid()) {
@@ -202,15 +218,18 @@ public class Close_Auto extends OpMode {
                     }
                 }
                 break;
-            case A2:
+            case Path2:
+                // Keep it diverted right then follow path 2
                 diverterDirection = DiverterDirection.RIGHT;
                 diverter.setPosition(RIGHT_POSITION);
                 if (follower.atParametricEnd()) {
                     follower.followPath(Ze_Paths.Path2);
-                    currentpath = paths.A2FIRE;
+                    currentpath = paths.Path2FIRE;
                 }
                 break;
-            case A2FIRE:
+            case Path2FIRE:
+                // Keep it diverted!
+                // Then fire every around 10-20% of the time after 0.35
                 //purple on right green on left
                 diverterDirection = DiverterDirection.RIGHT;
                 diverter.setPosition(RIGHT_POSITION);
@@ -222,6 +241,8 @@ public class Close_Auto extends OpMode {
                 if (last_fire_time + (fire_wait - (5000)) <= System.currentTimeMillis()) {
                     switch (obelisk) {
                         case 21:
+                            //Left Right Right
+                            // aka Green Purple Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
                                 launchLeft(true);
                             }
@@ -234,18 +255,22 @@ public class Close_Auto extends OpMode {
                             }
                             break;
                         case 22:
+                            // Right Left Right
+                            // aka Purple Green Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchLeft(true);
+                                launchRight(true);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchLeft(true);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchLeft(true);
+                                launchRight(true);
                             }
                             break;
                         case 23:
+                            // Right Right Left
+                            // aka Purple Purple Green 😎
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
                                 launchRight(true);
                             }
@@ -261,108 +286,126 @@ public class Close_Auto extends OpMode {
                 }
 
                 if (last_fire_time + fire_wait <= System.currentTimeMillis()) {
-                    currentpath = paths.A3;
+                    // Then go to next path
+                    currentpath = paths.Path3;
                 }
 
                 }
                 break;
-            case A3:
-
+            case Path3:
+                //Keep Diverter Right!
                 diverterDirection = DiverterDirection.RIGHT;
                 diverter.setPosition(RIGHT_POSITION);
                 if (follower.atParametricEnd()) {
                     follower.followPath(Ze_Paths.Path3);
-                    currentpath = paths.A4;
+                    currentpath = paths.Path4;
                 }
                 break;
-            case A4:
-
+            case Path4:
+                //Pick up First ball go slow slow (0.5 Power)
                 if (follower.atParametricEnd()) {
                     follower.setMaxPower(0.5);
                     follower.followPath(Ze_Paths.Path4);
-                    currentpath = paths.A5;
+                    currentpath = paths.Path4;
 
                 }
-            case A5:
+            case Path5:
+                // Flip Diverter to keep Green on Left, Purple on Right
                 diverterDirection = DiverterDirection.LEFT;
                 diverter.setPosition(LEFT_POSITION);
                 if (follower.atParametricEnd()) {
+                    // Follow Next path
                     follower.followPath(Ze_Paths.Path5);
-                    currentpath = paths.A6;
+                    currentpath = paths.Path4;
                 }
-            case A6:
+            case Path6:
+                // Go speedy and then go to shoot
                 if (follower.atParametricEnd()) {
                     follower.setMaxPower(1);
                     follower.followPath(Ze_Paths.Path6);
-                    currentpath = paths.A6Fire;
+                    currentpath = paths.Path6Fire;
                 }
-            case A6Fire:
+            case Path6Fire:
                 //wait 3 seconds
                 if (follower.atParametricEnd()) {
                 if (fire == 1) {
                     last_fire_time = System.currentTimeMillis();
                     fire = 2;
                 }
-                    switch (obelisk) {
-                        case 21:
-                            if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchLeft(true);
-                            }
-                            if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true);
-                            }
-                            if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
+                if (last_fire_time + (fire_wait - (5000)) <= System.currentTimeMillis()) {
+                        switch (obelisk) {
+                            case 21:
+                                //Left Right Right
+                                // aka Green Purple Purple
+                                if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
+                                    launchLeft(true);
+                                }
+                                if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
+                                    launchRight(true);
+                                }
+                                if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true);
-                            }
-                            break;
-                        case 22:
-                            if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchLeft(true);
-                            }
-                            if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true);
-                            }
-                            if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
+                                    launchRight(true);
+                                }
+                                break;
+                            case 22:
+                                // Right Left Right
+                                // aka Purple Green Purple
+                                if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
+                                    launchRight(true);
+                                }
+                                if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
+                                    launchLeft(true);
+                                }
+                                if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchLeft(true);
-                            }
-                            break;
-                        case 23:
-                            if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true);
-                            }
-                            if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true);
-                            }
-                            if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
+                                    launchRight(true);
+                                }
+                                break;
+                            case 23:
+                                // Right Right Left
+                                // aka Purple Purple Green 😎
+                                if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
+                                    launchRight(true);
+                                }
+                                if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
+                                    launchRight(true);
+                                }
+                                if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchLeft(true);
-                            }
-                            break;
+                                    launchLeft(true);
+                                }
+                                break;
+                        }
                     }
                 if (last_fire_time + fire_wait <= System.currentTimeMillis()) {
-                    currentpath = paths.A7;
+                    //Follow Next Path
+                    currentpath = paths.Path7;
                 }
                 }
                 break;
-            case A7:
+            case Path7:
+                // Head Backdown
                 if (follower.atParametricEnd()) {
                     follower.followPath(Ze_Paths.Path7);
-                    currentpath = paths.A8;
+                    currentpath = paths.Path8;
                 }
-            case A8:
+            case Path8:
+                // Slow your roll bud
                 if (follower.atParametricEnd()) {
                     follower.setMaxPower(0.5);
                         follower.followPath(Ze_Paths.Path8);
-                        currentpath = paths.A9;
+                        currentpath = paths.Path9;
                 }
-            case A9:
+            case Path9:
+                // TODO swap diverter
+                // Intake
                 if (follower.atParametricEnd()) {
                     follower.followPath(Ze_Paths.Path9);
-                    currentpath = paths.A10;
+                    currentpath = paths.Path10;
                 }
-            case A10:
+            case Path10:
+                // Fly back up
                 if (follower.atParametricEnd()) {
                     follower.followPath(Ze_Paths.Path10);
                     follower.setMaxPower(1);
@@ -370,6 +413,7 @@ public class Close_Auto extends OpMode {
                 }
             case end:
                 //wait 3 seconds
+                // TODO add shooting
                 if (follower.atParametricEnd()) {
                     if (fire == 1) {
                         last_fire_time = System.currentTimeMillis();
@@ -382,15 +426,10 @@ public class Close_Auto extends OpMode {
                 break;
         }
     }
-
-    public enum close_state {
-        A1,
-        A2
-    }
+    
 
 
-
-    public static class Da_Paths {
+    private static class Da_Paths {
         public PathChain Path1;
         public PathChain Path2;
         public PathChain Path3;
