@@ -51,7 +51,7 @@ import java.util.function.Supplier;
 @TeleOp(name = "Competition Teleop", group = "Comp")
 //@Disabled
 public class Competition_Teleop extends OpMode {
-    final double FEED_TIME_SECONDS = 1.45; //The feeder servos run this long when a shot is requested.
+    final double FEED_TIME_SECONDS = 1.75; //The feeder servos run this long when a shot is requested
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
     final double FULL_SPEED = 1.0;
 
@@ -233,7 +233,11 @@ public class Competition_Teleop extends OpMode {
             leftLauncher.setVelocity(STOP_SPEED);
             rightLauncher.setVelocity(STOP_SPEED);
         }
-
+        if (gamepad1.xWasPressed()) {
+            intakeState = IntakeState.OFF;
+            intake.setDirection(DcMotorSimple.Direction.FORWARD);
+            intake.setPower(1);
+        }
         if (gamepad1.aWasPressed()){
             switch (intakeState){
                 case ON:
@@ -243,6 +247,7 @@ public class Competition_Teleop extends OpMode {
                     break;
                 case OFF:
                     intakeState = IntakeState.ON;
+                    intake.setDirection(DcMotorSimple.Direction.REVERSE);
                     intake.setPower(1);
                     break;
             }

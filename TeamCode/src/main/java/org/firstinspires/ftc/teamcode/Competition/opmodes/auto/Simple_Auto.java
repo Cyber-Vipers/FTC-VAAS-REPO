@@ -175,7 +175,7 @@ public class Simple_Auto extends OpMode {
         public PathChain Path1;
         public PathChain Path2;
         public PathChain Path3;
-        public double baller = -0.0005;
+        public double baller = -1;
         public PathChain Path4;
         public PathChain Path5;
 

@@ -157,8 +157,8 @@ class LocalizationTest extends OpMode {
 
         telemetryM.debug("x:" + follower.getPose().getX());
         telemetryM.debug("y:" + follower.getPose().getY());
-        telemetryM.debug("heading:" + follower.getPose().getHeading());
-        telemetryM.debug("total heading:" + follower.getTotalHeading());
+        telemetryM.debug("heading:" + Math.toDegrees(follower.getPose().getHeading()));
+        telemetryM.debug("total heading:" + Math.toDegrees(follower.getTotalHeading()));
         telemetryM.update(telemetry);
 
         draw();
@@ -915,8 +915,8 @@ class DriveTuner extends OpMode {
 
         if (!follower.isBusy()) {
             if (forward) {
-                forward = false;
-                follower.followPath(backwards);
+//                forward = false;
+//                follower.followPath(backwards);
             } else {
                 forward = true;
                 follower.followPath(forwards);

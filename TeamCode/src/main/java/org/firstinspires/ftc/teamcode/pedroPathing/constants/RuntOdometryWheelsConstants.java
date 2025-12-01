@@ -20,7 +20,8 @@ public class RuntOdometryWheelsConstants {
             .mass(9.52544)
             .forwardZeroPowerAcceleration(-1987.529256386748)
             .lateralZeroPowerAcceleration(-88.53049322546104)
-            .translationalPIDFCoefficients(new PIDFCoefficients(0.1, 0, 0.01, 0.03))
+
+            .translationalPIDFCoefficients(new PIDFCoefficients(0.30, 0, 0.03, 0.03))
             .headingPIDFCoefficients(new PIDFCoefficients(1, 0, 0.02, 0.01))
             .lateralZeroPowerAcceleration(-67.60657954116293);
 
@@ -34,7 +35,7 @@ public class RuntOdometryWheelsConstants {
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
             .xVelocity(78.88812063622663)
-            .maxPower(0.5)
+            .useBrakeModeInTeleOp(true)
             .yVelocity(64.22306955893208);
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
