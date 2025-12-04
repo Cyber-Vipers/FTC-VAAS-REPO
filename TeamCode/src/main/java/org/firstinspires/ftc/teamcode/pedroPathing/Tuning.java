@@ -24,6 +24,7 @@ import com.pedropathing.util.*;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.teamcode.pedroPathing.constants.Old24MotorConstants;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntVisualConstants;
 
@@ -81,10 +82,10 @@ public class Tuning extends SelectableOpMode {
     @Override
     public void onSelect() {
         if (follower == null) {
-            follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
+            follower = Old24MotorConstants.createFollower(hardwareMap);
             PanelsConfigurables.INSTANCE.refreshClass(this);
         } else {
-            follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
+            follower = Old24MotorConstants.createFollower(hardwareMap);
         }
 
         follower.setStartingPose(new Pose());

@@ -77,8 +77,8 @@ public class Competition_Teleop extends OpMode {
     private DcMotorEx leftLauncher = null;
     private DcMotorEx rightLauncher = null;
     private DcMotor intake = null;
-    private CRServo leftFeeder = null;
-    private CRServo rightFeeder = null;
+    private Servo leftFeeder = null;
+    private Servo rightFeeder = null;
     private Servo diverter = null;
     private Supplier<PathChain> pathChain;
     private Supplier<PathChain> rot;
@@ -141,8 +141,8 @@ public class Competition_Teleop extends OpMode {
         leftLauncher = hardwareMap.get(DcMotorEx.class, "flywheelLeft");
         rightLauncher = hardwareMap.get(DcMotorEx.class, "flywheelRight");
         intake = hardwareMap.get(DcMotor.class, "rollerIntake");
-        leftFeeder = hardwareMap.get(CRServo.class, "indexLeft");
-        rightFeeder = hardwareMap.get(CRServo.class, "indexRight");
+        leftFeeder = hardwareMap.get(Servo.class, "indexLeft");
+        rightFeeder = hardwareMap.get(Servo.class, "indexRight");
         diverter = hardwareMap.get(Servo.class, "modulator");
 
         /*
@@ -179,8 +179,7 @@ public class Competition_Teleop extends OpMode {
         /*
          * set Feeders to an initial value to initialize the servo controller
          */
-        leftFeeder.setPower(STOP_SPEED);
-        rightFeeder.setPower(STOP_SPEED);
+
 
         leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
         rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
@@ -189,7 +188,6 @@ public class Competition_Teleop extends OpMode {
          * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
          * both work to feed the ball into the robot.
          */
-        rightFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
         follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
         follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
         follower.update();
@@ -337,6 +335,8 @@ public class Competition_Teleop extends OpMode {
         }
     }
 
+
+
     void launchLeft(boolean shotRequested) {
         switch (leftLaunchState) {
             case IDLE:
@@ -352,14 +352,15 @@ public class Competition_Teleop extends OpMode {
                 }
                 break;
             case LAUNCH:
-                leftFeeder.setPower(-FULL_SPEED);
+                leftFeeder.setPosition(1);
                 leftFeederTimer.reset();
                 leftLaunchState = LaunchState.LAUNCHING;
                 break;
             case LAUNCHING:
                 if (leftFeederTimer.seconds() > FEED_TIME_SECONDS) {
                     leftLaunchState = LaunchState.IDLE;
-                    leftFeeder.setPower(STOP_SPEED);
+                    leftFeeder.setPosition(0);
+
                 }
                 break;
         }
@@ -380,14 +381,14 @@ public class Competition_Teleop extends OpMode {
                 }
                 break;
             case LAUNCH:
-                rightFeeder.setPower(-FULL_SPEED);
+                rightFeeder.setPosition(1);
                 rightFeederTimer.reset();
                 rightLaunchState = LaunchState.LAUNCHING;
                 break;
             case LAUNCHING:
                 if (rightFeederTimer.seconds() > FEED_TIME_SECONDS) {
                     rightLaunchState = LaunchState.IDLE;
-                    rightFeeder.setPower(STOP_SPEED);
+                    rightFeeder.setPosition(0);
                 }
                 break;
         }

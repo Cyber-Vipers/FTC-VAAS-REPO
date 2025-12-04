@@ -8,6 +8,8 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -145,19 +147,23 @@ public class Far_Auto extends OpMode {
     }
     public enum paths {
         Path1,
+        Path1Fire,
         Path2,
         Path2FIRE,
         Path3,
         Path4,
         Path5,
+        Path5Fire,
         Path6,
         Path6Fire,
         Path7,
         Path8,
         Path9,
+        Path9Fire,
         Path10,
         Path11,
         Path12,
+        Path12Fire,
         Path13,
         end
     }
@@ -171,7 +177,164 @@ public class Far_Auto extends OpMode {
 
     @Override
     public void loop() {
+        if (currentpath != paths.Path1Fire && currentpath != paths.Path5Fire && currentpath != paths.Path9Fire && currentpath != paths.Path12Fire) {
+            leftFeeder.setPower(0);
+            rightFeeder.setPower(0);
+        }
+        intake.setPower(1);
+        switch (currentpath) {
+            case Path1:
+                //Divert to right, follow path 1, then read obelisk
+                diverterDirection = DiverterDirection.RIGHT;
+                diverter.setPosition(RIGHT_POSITION);
+                if (loops == 0) {
+                    follower.followPath(Ze_Paths.Path1);
+                    currentpath = paths.Path2;
+                }
+                LLResult result = limelight.getLatestResult();
+                if (result != null && result.isValid()) {
+                    double tx = result.getTx();
+                    double ty = result.getTy();
+                    double ta = result.getTa();
+                    for (LLResultTypes.FiducialResult april : result.getFiducialResults()) {
+                        if (april.getFiducialId() != 20 & april.getFiducialId() != 24) {
+                            obelisk = april.getFiducialId();
+                            obelisk_changed = true;
+                        }
+                    }
+                }
+                break;
+            case Path1Fire:
+                //TODO fire
+                if (fire == 0) {
+                    last_fire_time = System.currentTimeMillis();
+                    fire = 1;
+                }
+                if (last_fire_time + fire_wait <= System.currentTimeMillis()) {
 
+                    currentpath = paths.Path2;
+                    follower.followPath(Ze_Paths.Path2);
+                    diverterDirection = DiverterDirection.RIGHT;
+                    diverter.setPosition(RIGHT_POSITION);
+                }
+            case Path2:
+                if (follower.atParametricEnd()) {
+                    currentpath = paths.Path3;
+                    follower.followPath(Ze_Paths.Path3);
+                    diverterDirection = DiverterDirection.RIGHT;
+                    diverter.setPosition(RIGHT_POSITION);
+                }
+            case Path3:
+                if (follower.atParametricEnd()) {
+                    currentpath = paths.Path4;
+                    diverterDirection = DiverterDirection.LEFT;
+                    diverter.setPosition(LEFT_POSITION);
+                    follower.followPath(Ze_Paths.Path4);
+                }
+            case Path4:
+                if (follower.atParametricEnd()) {
+                    currentpath = paths.Path5;
+                    diverterDirection = DiverterDirection.LEFT;
+                    diverter.setPosition(LEFT_POSITION);
+                    follower.followPath(Ze_Paths.Path5);
+                }
+            case Path5:
+                if (follower.atParametricEnd()) {
+                    currentpath = paths.Path5Fire;
+                    diverterDirection = DiverterDirection.LEFT;
+                    diverter.setPosition(LEFT_POSITION);
+                    follower.followPath(Ze_Paths.Path6);
+                }
+            case Path5Fire:
+                //TODO fire
+                if (fire == 1){
+                    last_fire_time = System.currentTimeMillis();
+                    fire = 2;
+                }
+                if(last_fire_time + fire_wait < System.currentTimeMillis()) {
+                    currentpath = paths.Path6;
+                    diverterDirection = DiverterDirection.LEFT;
+                    diverter.setPosition(LEFT_POSITION);
+                    follower.followPath(Ze_Paths.Path6);
+                }
+            case Path6:
+                if (follower.atParametricEnd()) {
+                    currentpath = paths.Path7;
+                    diverterDirection = DiverterDirection.RIGHT;
+                    diverter.setPosition(RIGHT_POSITION);
+                    follower.followPath(Ze_Paths.Path7);
+                }
+            case Path7:
+                if (follower.atParametricEnd()) {
+                    currentpath = paths.Path8;
+                    diverterDirection = DiverterDirection.RIGHT;
+                    diverter.setPosition(RIGHT_POSITION);
+                    follower.followPath(Ze_Paths.Path8);
+                }
+            case Path8:
+                if (follower.atParametricEnd()) {
+                    currentpath = paths.Path9;
+                    diverterDirection = DiverterDirection.RIGHT;
+                    diverter.setPosition(RIGHT_POSITION);
+                    follower.followPath(Ze_Paths.Path9);
+                }
+            case Path9:
+                if (follower.atParametricEnd()) {
+                    currentpath = paths.Path9Fire;
+                    diverterDirection = DiverterDirection.RIGHT;
+                    diverter.setPosition(RIGHT_POSITION);
+                    follower.followPath(Ze_Paths.Path9);
+                }
+            case Path9Fire:
+                //TODO fire
+                if (fire == 2){
+                    last_fire_time = System.currentTimeMillis();
+                    fire = 3;
+                }
+                if(last_fire_time + fire_wait <= System.currentTimeMillis()) {
+                    currentpath = paths.Path10;
+                    diverterDirection = DiverterDirection.RIGHT;
+                    diverter.setPosition(RIGHT_POSITION);
+                    follower.followPath(Ze_Paths.Path10);
+                }
+            case Path10:
+                if (follower.atParametricEnd()) {
+                    currentpath = paths.Path11;
+                    diverterDirection = DiverterDirection.LEFT;
+                    diverter.setPosition(LEFT_POSITION);
+                    follower.followPath(Ze_Paths.Path11);
+                }
+            case Path11:
+                if (follower.atParametricEnd()) {
+                    currentpath = paths.Path12;
+                    diverterDirection = DiverterDirection.LEFT;
+                    diverter.setPosition(LEFT_POSITION);
+                    follower.followPath(Ze_Paths.Path12);
+                }
+            case Path12:
+                if (follower.atParametricEnd()) {
+                    currentpath = paths.Path12Fire;
+                    diverterDirection = DiverterDirection.LEFT;
+                    diverter.setPosition(LEFT_POSITION);
+                    follower.followPath(Ze_Paths.Path12);
+                }
+            case Path12Fire:
+                //TODO fire
+                if (fire == 3) {
+                    last_fire_time = System.currentTimeMillis();
+                    fire = 4;
+                }
+                if (last_fire_time + fire_wait <= System.currentTimeMillis()) {
+                    currentpath = paths.Path13;
+                    diverterDirection = DiverterDirection.LEFT;
+                    diverter.setPosition(LEFT_POSITION);
+                    follower.followPath(Ze_Paths.Path13);
+                }
+            case Path13:
+                if (follower.atParametricEnd()) {
+                    currentpath = paths.end;
+                }
+        }
     }
     private class Da_Paths {
         public PathChain Path1;
