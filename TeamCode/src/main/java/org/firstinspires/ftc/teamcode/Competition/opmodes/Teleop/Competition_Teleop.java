@@ -24,6 +24,7 @@ package org.firstinspires.ftc.teamcode.Competition.opmodes.Teleop;/*   MIT Licen
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
@@ -47,10 +48,14 @@ import java.util.function.Supplier;
  * This file includes a teleop (driver-controlled) file for the goBILDA® Robot in 3 Days for the
  * 2025-2026 FIRST® Tech Challenge season DECODE™!
  */
-
+@Configurable
 @TeleOp(name = "Competition Teleop", group = "Comp")
 //@Disabled
 public class Competition_Teleop extends OpMode {
+    public static double left_feeder_block = 0.25;
+    public static double right_feeder_block = 0.25;
+    public static double right_feeder_up = 0;
+    public static double left_feeder_up = 1;
     final double FEED_TIME_SECONDS = 1.75; //The feeder servos run this long when a shot is requested
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
     final double FULL_SPEED = 1.0;
@@ -77,6 +82,7 @@ public class Competition_Teleop extends OpMode {
     private DcMotorEx leftLauncher = null;
     private DcMotorEx rightLauncher = null;
     private DcMotor intake = null;
+    public DcMotor feeder;
     private Servo leftFeeder = null;
     private Servo rightFeeder = null;
     private Servo diverter = null;
@@ -144,7 +150,6 @@ public class Competition_Teleop extends OpMode {
         leftFeeder = hardwareMap.get(Servo.class, "indexLeft");
         rightFeeder = hardwareMap.get(Servo.class, "indexRight");
         diverter = hardwareMap.get(Servo.class, "modulator");
-
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
          * because the axles point in opposite directions. Pushing the left stick forward
@@ -209,6 +214,8 @@ public class Competition_Teleop extends OpMode {
      */
     @Override
     public void start() {
+        leftFeeder.setPosition(left_feeder_block);
+        rightFeeder.setPosition(right_feeder_block);
         follower.startTeleopDrive();
     }
 
@@ -352,14 +359,16 @@ public class Competition_Teleop extends OpMode {
                 }
                 break;
             case LAUNCH:
-                leftFeeder.setPosition(1);
+                leftFeeder.setPosition(left_feeder_up);
+                feeder.setPower(1);
                 leftFeederTimer.reset();
                 leftLaunchState = LaunchState.LAUNCHING;
                 break;
             case LAUNCHING:
                 if (leftFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                    feeder.setPower(0);
                     leftLaunchState = LaunchState.IDLE;
-                    leftFeeder.setPosition(0);
+                    leftFeeder.setPosition(left_feeder_block);
 
                 }
                 break;
@@ -381,14 +390,16 @@ public class Competition_Teleop extends OpMode {
                 }
                 break;
             case LAUNCH:
-                rightFeeder.setPosition(1);
+                rightFeeder.setPosition(right_feeder_up);
+                feeder.setPower(1);
                 rightFeederTimer.reset();
                 rightLaunchState = LaunchState.LAUNCHING;
                 break;
             case LAUNCHING:
                 if (rightFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                    feeder.setPower(0);
                     rightLaunchState = LaunchState.IDLE;
-                    rightFeeder.setPosition(0);
+                    rightFeeder.setPosition(right_feeder_block);
                 }
                 break;
         }
