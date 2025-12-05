@@ -120,6 +120,7 @@ public class Simple_Auto extends OpMode {
          * Tell the driver that initialization is complete.
          */
         telemetry.addData("Status", "Initialized");
+        telemetry.addData("This is a Simple Auto for testing concepts for 20525 with config 'Silly Robot'", " This DOES move (off the table)");
     }
     public enum paths {
         A1,

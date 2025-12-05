@@ -150,6 +150,7 @@ public class Competition_Teleop extends OpMode {
         leftFeeder = hardwareMap.get(Servo.class, "indexLeft");
         rightFeeder = hardwareMap.get(Servo.class, "indexRight");
         diverter = hardwareMap.get(Servo.class, "modulator");
+        feeder = hardwareMap.get(DcMotor.class, "feeder");
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
          * because the axles point in opposite directions. Pushing the left stick forward
@@ -200,6 +201,7 @@ public class Competition_Teleop extends OpMode {
          * Tell the driver that initialization is complete.
          */
         telemetry.addData("Status", "Initialized");
+        telemetry.addData("This is the TELEOP for 20525 for Config 'Silly Robot'"," This Does NOT MOVE (off the table) without input");
     }
 
     /*

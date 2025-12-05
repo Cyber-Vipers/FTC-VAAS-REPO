@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.Competition.opmodes.auto;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.field.FieldManager;
 import com.bylazar.field.PanelsField;
 import com.pedropathing.follower.Follower;
@@ -12,7 +13,6 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -20,12 +20,17 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
-public class Far_Auto extends OpMode {
+@Configurable
+public class Red_Far_Auto extends OpMode {
     //**PRELOAD MUST BE PURPLE ON RIGHT ONE GREEN ON LEFT**
     //TODO actually add logic, shooting, etc
     public int loops = 0;
+    public static double left_feeder_block = 0.25;
+    public static double right_feeder_block = 0.25;
+    public static double right_feeder_up = 0;
+    public static double left_feeder_up = 1;
+    public DcMotor feeder;
     private enum LaunchState {
         IDLE,
         SPIN_UP,
@@ -68,17 +73,16 @@ public class Far_Auto extends OpMode {
     private DcMotorEx leftLauncher = null;
     private DcMotorEx rightLauncher = null;
     private DcMotor intake = null;
-    private CRServo leftFeeder = null;
-    private CRServo rightFeeder = null;
+    private Servo leftFeeder = null;
+    private Servo rightFeeder = null;
     private Servo diverter = null;
     private Follower follower;
     public Limelight3A limelight;
     @Override
     public void init() {
-        telemetry.addLine("I'm Blue Bro");
-        limelight = hardwareMap.get(Limelight3A.class,"limelight");
-        limelight.setPollRateHz(100);
-        limelight.start();
+        leftLaunchState = LaunchState.IDLE;
+        rightLaunchState = LaunchState.IDLE;
+
         leftFrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
         rightFrontDrive = hardwareMap.get(DcMotor.class, "frontRight");
         leftBackDrive = hardwareMap.get(DcMotor.class, "backLeft");
@@ -86,10 +90,10 @@ public class Far_Auto extends OpMode {
         leftLauncher = hardwareMap.get(DcMotorEx.class, "flywheelLeft");
         rightLauncher = hardwareMap.get(DcMotorEx.class, "flywheelRight");
         intake = hardwareMap.get(DcMotor.class, "rollerIntake");
-        leftFeeder = hardwareMap.get(CRServo.class, "indexLeft");
-        rightFeeder = hardwareMap.get(CRServo.class, "indexRight");
+        leftFeeder = hardwareMap.get(Servo.class, "indexLeft");
+        rightFeeder = hardwareMap.get(Servo.class, "indexRight");
         diverter = hardwareMap.get(Servo.class, "modulator");
-        telemetry.addLine("new");
+        feeder = hardwareMap.get(DcMotor.class, "feeder");
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
          * because the axles point in opposite directions. Pushing the left stick forward
@@ -124,25 +128,18 @@ public class Far_Auto extends OpMode {
         /*
          * set Feeders to an initial value to initialize the servo controller
          */
-        leftFeeder.setPower(STOP_SPEED);
-        rightFeeder.setPower(STOP_SPEED);
+
 
         leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
         rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
 
-        /*
-         * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
-         * both work to feed the ball into the robot.
-         */
-
-        rightFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
-        follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(64,8,Math.toRadians(90)));
+        follower.setStartingPose(new Pose(64,8,Math.toRadians(90)).mirror());
         follower.update();
         Ze_Paths = new Da_Paths(follower);
         /*
          * Tell the driver that initialization is complete.
          */
+        telemetry.addData("This is the concept for the far auto for 20525 with config 'Silly Robot' ", "This DOES move (off the table)");
         telemetry.addData("Status", "Initialized");
     }
     public enum paths {
@@ -171,15 +168,14 @@ public class Far_Auto extends OpMode {
     public paths currentpath = paths.Path1;
     public boolean obelisk_changed;
     public int obelisk = 21;
-    public long fire_wait = 6000;
+    public static long fire_wait = 6000;
     public long last_fire_time = 0;
     public int fire = 0;
 
     @Override
     public void loop() {
         if (currentpath != paths.Path1Fire && currentpath != paths.Path5Fire && currentpath != paths.Path9Fire && currentpath != paths.Path12Fire) {
-            leftFeeder.setPower(0);
-            rightFeeder.setPower(0);
+            feeder.setPower(0);
         }
         intake.setPower(1);
         switch (currentpath) {
@@ -209,6 +205,52 @@ public class Far_Auto extends OpMode {
                 if (fire == 0) {
                     last_fire_time = System.currentTimeMillis();
                     fire = 1;
+                }
+                if (last_fire_time + (fire_wait - (5000)) <= System.currentTimeMillis()) {
+                    switch (obelisk) {
+                        case 21:
+                            //Left Right Right
+                            // aka Green Purple Purple
+                            if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
+                                launchLeft(true);
+                            }
+                            if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
+                                launchRight(true);
+                            }
+                            if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
+
+                                launchRight(true);
+                            }
+                            break;
+                        case 22:
+                            // Right Left Right
+                            // aka Purple Green Purple
+                            if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
+                                launchRight(true);
+                            }
+                            if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
+                                launchLeft(true);
+                            }
+                            if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
+
+                                launchRight(true);
+                            }
+                            break;
+                        case 23:
+                            // Right Right Left
+                            // aka Purple Purple Green 😎
+                            if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
+                                launchRight(true);
+                            }
+                            if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
+                                launchRight(true);
+                            }
+                            if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
+
+                                launchLeft(true);
+                            }
+                            break;
+                    }
                 }
                 if (last_fire_time + fire_wait <= System.currentTimeMillis()) {
 
@@ -354,7 +396,7 @@ public class Far_Auto extends OpMode {
             Path1 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(64.000, 8.000), new Pose(70.206, 10.991))
+                            new BezierLine(new Pose(64.000, 8.000).mirror(), new Pose(70.206, 10.991).mirror())
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(115))
                     .build();
@@ -362,7 +404,7 @@ public class Far_Auto extends OpMode {
             Path2 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(70.206, 10.991), new Pose(41.271, 36.112))
+                            new BezierLine(new Pose(70.206, 10.991).mirror(), new Pose(41.271, 36.112).mirror())
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(180))
                     .build();
@@ -370,7 +412,7 @@ public class Far_Auto extends OpMode {
             Path3 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(41.271, 36.112), new Pose(36.561, 35.888))
+                            new BezierLine(new Pose(41.271, 36.112).mirror(), new Pose(36.561, 35.888).mirror())
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(180))
                     .build();
@@ -378,7 +420,7 @@ public class Far_Auto extends OpMode {
             Path4 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(36.561, 35.888), new Pose(21.533, 35.888))
+                            new BezierLine(new Pose(36.561, 35.888).mirror(), new Pose(21.533, 35.888).mirror())
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(180))
                     .build();
@@ -386,7 +428,7 @@ public class Far_Auto extends OpMode {
             Path5 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(21.533, 35.888), new Pose(72.449, 83.664))
+                            new BezierLine(new Pose(21.533, 35.888).mirror(), new Pose(72.449, 83.664).mirror())
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(137))
                     .build();
@@ -394,7 +436,7 @@ public class Far_Auto extends OpMode {
             Path6 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(72.449, 83.664), new Pose(50.916, 59.439))
+                            new BezierLine(new Pose(72.449, 83.664).mirror(), new Pose(50.916, 59.439).mirror())
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(137), Math.toRadians(180))
                     .build();
@@ -402,7 +444,7 @@ public class Far_Auto extends OpMode {
             Path7 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(50.916, 59.439), new Pose(36.785, 58.991))
+                            new BezierLine(new Pose(50.916, 59.439).mirror(), new Pose(36.785, 58.991).mirror())
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(180))
                     .build();
@@ -410,7 +452,7 @@ public class Far_Auto extends OpMode {
             Path8 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(36.785, 58.991), new Pose(17.495, 58.542))
+                            new BezierLine(new Pose(36.785, 58.991).mirror(), new Pose(17.495, 58.542).mirror())
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(180))
                     .build();
@@ -426,7 +468,7 @@ public class Far_Auto extends OpMode {
             Path10 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(72.449, 83.664), new Pose(39.701, 83.439))
+                            new BezierLine(new Pose(72.449, 83.664).mirror(), new Pose(39.701, 83.439).mirror())
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(137), Math.toRadians(180))
                     .build();
@@ -434,7 +476,7 @@ public class Far_Auto extends OpMode {
             Path11 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(39.701, 83.439), new Pose(18.841, 83.215))
+                            new BezierLine(new Pose(39.701, 83.439).mirror(), new Pose(18.841, 83.215).mirror())
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(180))
                     .build();
@@ -442,7 +484,7 @@ public class Far_Auto extends OpMode {
             Path12 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(18.841, 83.215), new Pose(72.449, 83.664))
+                            new BezierLine(new Pose(18.841, 83.215).mirror(), new Pose(72.449, 83.664).mirror())
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(137))
                     .build();
@@ -450,11 +492,70 @@ public class Far_Auto extends OpMode {
             Path13 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(72.449, 83.664), new Pose(64.000, 8.000))
+                            new BezierLine(new Pose(72.449, 83.664).mirror(), new Pose(64.000, 8.000).mirror())
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(137), Math.toRadians(90))
                     .build();
         }
         }
+    void launchLeft(boolean shotRequested) {
+        switch (leftLaunchState) {
+            case IDLE:
+                if (shotRequested) {
+                    leftLaunchState = LaunchState.SPIN_UP;
+                }
+                break;
+            case SPIN_UP:
+                leftLauncher.setVelocity(launcherTarget);
+                rightLauncher.setVelocity(launcherTarget);
+                if (leftLauncher.getVelocity() > launcherMin) {
+                    leftLaunchState = LaunchState.LAUNCH;
+                }
+                break;
+            case LAUNCH:
+                leftFeeder.setPosition(left_feeder_up);
+                feeder.setPower(1);
+                leftFeederTimer.reset();
+                leftLaunchState = LaunchState.LAUNCHING;
+                break;
+            case LAUNCHING:
+                if (leftFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                    feeder.setPower(0);
+                    leftLaunchState = LaunchState.IDLE;
+                    leftFeeder.setPosition(left_feeder_block);
 
+                }
+                break;
+        }
     }
+
+    void launchRight(boolean shotRequested) {
+        switch (rightLaunchState) {
+            case IDLE:
+                if (shotRequested) {
+                    rightLaunchState = LaunchState.SPIN_UP;
+                }
+                break;
+            case SPIN_UP:
+                leftLauncher.setVelocity(launcherTarget);
+                rightLauncher.setVelocity(launcherTarget);
+                if (leftLauncher.getVelocity() > launcherMin) {
+                    rightLaunchState = LaunchState.LAUNCH;
+                }
+                break;
+            case LAUNCH:
+                rightFeeder.setPosition(right_feeder_up);
+                feeder.setPower(1);
+                rightFeederTimer.reset();
+                rightLaunchState = LaunchState.LAUNCHING;
+                break;
+            case LAUNCHING:
+                if (rightFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                    feeder.setPower(0);
+                    rightLaunchState = LaunchState.IDLE;
+                    rightFeeder.setPosition(right_feeder_block);
+                }
+                break;
+        }
+    }
+}

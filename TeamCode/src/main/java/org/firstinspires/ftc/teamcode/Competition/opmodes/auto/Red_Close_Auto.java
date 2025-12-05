@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.Competition.opmodes.auto;
 import com.bylazar.field.FieldManager;
 import com.bylazar.field.PanelsField;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
@@ -15,17 +14,20 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.*;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.Competition.opmodes.Teleop.Competition_Teleop;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
 
-@Autonomous(name = "Close Auto")
-public class Close_Auto extends OpMode {
+@Autonomous(name = "Red Close Auto")
+public class Red_Close_Auto extends OpMode {
     //**PRELOAD MUST BE PURPLE ON RIGHT ONE GREEN ON LEFT**
     //TODO Fix Shooting, Finish Bottom parts of functionality, as listed with other TODOS
     public int loops = 0;
+    public static double left_feeder_block = 0.25;
+    public static double right_feeder_block = 0.25;
+    public static double right_feeder_up = 0;
+    public static double left_feeder_up = 1;
     private enum LaunchState {
         IDLE,
         SPIN_UP,
@@ -34,6 +36,7 @@ public class Close_Auto extends OpMode {
     }
     private LaunchState leftLaunchState = LaunchState.IDLE;
     private LaunchState rightLaunchState = LaunchState.IDLE;
+    public DcMotor feeder;
     ElapsedTime leftFeederTimer = new ElapsedTime();
     ElapsedTime rightFeederTimer = new ElapsedTime();
     final double FEED_TIME_SECONDS = 1.45; //The feeder servos run this long when a shot is requested.
@@ -68,17 +71,16 @@ public class Close_Auto extends OpMode {
     private DcMotorEx leftLauncher = null;
     private DcMotorEx rightLauncher = null;
     private DcMotor intake = null;
-    private CRServo leftFeeder = null;
-    private CRServo rightFeeder = null;
+    private Servo leftFeeder = null;
+    private Servo rightFeeder = null;
     private Servo diverter = null;
     private Follower follower;
     public Limelight3A limelight;
     @Override
     public void init() {
-        telemetry.addLine("I'm Blue Bro");
-        limelight = hardwareMap.get(Limelight3A.class,"limelight");
-        limelight.setPollRateHz(100);
-        limelight.start();
+        leftLaunchState = LaunchState.IDLE;
+        rightLaunchState = LaunchState.IDLE;
+
         leftFrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
         rightFrontDrive = hardwareMap.get(DcMotor.class, "frontRight");
         leftBackDrive = hardwareMap.get(DcMotor.class, "backLeft");
@@ -86,10 +88,10 @@ public class Close_Auto extends OpMode {
         leftLauncher = hardwareMap.get(DcMotorEx.class, "flywheelLeft");
         rightLauncher = hardwareMap.get(DcMotorEx.class, "flywheelRight");
         intake = hardwareMap.get(DcMotor.class, "rollerIntake");
-        leftFeeder = hardwareMap.get(CRServo.class, "indexLeft");
-        rightFeeder = hardwareMap.get(CRServo.class, "indexRight");
+        leftFeeder = hardwareMap.get(Servo.class, "indexLeft");
+        rightFeeder = hardwareMap.get(Servo.class, "indexRight");
         diverter = hardwareMap.get(Servo.class, "modulator");
-        telemetry.addLine("new");
+        feeder = hardwareMap.get(DcMotor.class, "feeder");
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
          * because the axles point in opposite directions. Pushing the left stick forward
@@ -124,18 +126,11 @@ public class Close_Auto extends OpMode {
         /*
          * set Feeders to an initial value to initialize the servo controller
          */
-        leftFeeder.setPower(STOP_SPEED);
-        rightFeeder.setPower(STOP_SPEED);
+
 
         leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
         rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
 
-        /*
-         * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
-         * both work to feed the ball into the robot.
-         */
-
-        rightFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
         //*‼️QUICK RULE OF THUMB‼️* Make sure to use the correct constants!
         //(❁´◡`❁)
         follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
@@ -147,6 +142,7 @@ public class Close_Auto extends OpMode {
          * Tell the driver that initialization is complete.
          */
         telemetry.addData("Status", "Initialized");
+        telemetry.addData("This is the concept for the Close Auto for 20525 with config 'Silly Robot'", "This DOES move (off the table)");
     }
     public enum paths {
         Path1,
@@ -192,8 +188,7 @@ public class Close_Auto extends OpMode {
         // TODO Make it actually aim
         if ((currentpath != paths.Path2FIRE && currentpath != paths.Path6Fire && currentpath != paths.end)) {
             telemetry.addData("Conditional", (currentpath != paths.Path2FIRE || currentpath != paths.Path6Fire || currentpath != paths.end));
-            leftFeeder.setPower(0);
-            rightFeeder.setPower(0);
+            feeder.setPower(0);
         }
         // ️️ ‼️*Quick Rule of Thumb*‼️ Only follow new path at parametric end, and do not find parametric end at start of loop
         switch (currentpath) {
@@ -537,14 +532,17 @@ public class Close_Auto extends OpMode {
                 }
                 break;
             case LAUNCH:
-                leftFeeder.setPower(-FULL_SPEED);
+                leftFeeder.setPosition(left_feeder_up);
+                feeder.setPower(1);
                 leftFeederTimer.reset();
                 leftLaunchState = LaunchState.LAUNCHING;
                 break;
             case LAUNCHING:
                 if (leftFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                    feeder.setPower(0);
                     leftLaunchState = LaunchState.IDLE;
-                    leftFeeder.setPower(STOP_SPEED);
+                    leftFeeder.setPosition(left_feeder_block);
+
                 }
                 break;
         }
@@ -565,14 +563,16 @@ public class Close_Auto extends OpMode {
                 }
                 break;
             case LAUNCH:
-                rightFeeder.setPower(-FULL_SPEED);
+                rightFeeder.setPosition(right_feeder_up);
+                feeder.setPower(1);
                 rightFeederTimer.reset();
                 rightLaunchState = LaunchState.LAUNCHING;
                 break;
             case LAUNCHING:
                 if (rightFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                    feeder.setPower(0);
                     rightLaunchState = LaunchState.IDLE;
-                    rightFeeder.setPower(STOP_SPEED);
+                    rightFeeder.setPosition(right_feeder_block);
                 }
                 break;
         }

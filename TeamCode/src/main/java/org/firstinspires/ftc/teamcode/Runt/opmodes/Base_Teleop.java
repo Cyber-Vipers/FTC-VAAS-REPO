@@ -57,6 +57,7 @@ public class Base_Teleop extends OpMode {
                 .addPath(new Path(new BezierLine(follower::getPose,follower::getPose)))
                 .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(120),0.8))
                 .build();
+        telemetry.addData("This is a base teleop for the RUNT for path following", "This DOES run (off the table)");
     }
 
     @Override

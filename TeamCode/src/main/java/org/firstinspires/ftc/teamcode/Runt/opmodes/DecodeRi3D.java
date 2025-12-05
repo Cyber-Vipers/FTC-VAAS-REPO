@@ -178,6 +178,7 @@ public class DecodeRi3D extends OpMode {
          * Tell the driver that initialization is complete.
          */
         telemetry.addData("Status", "Initialized");
+        telemetry.addData("This is the base RBI3D Teleop meant for the build of 20525", "This does NOT (run off the table)");
     }
 
     /*

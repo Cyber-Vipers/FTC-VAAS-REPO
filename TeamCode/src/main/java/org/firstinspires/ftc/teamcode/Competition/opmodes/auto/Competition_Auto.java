@@ -104,6 +104,7 @@ public class Competition_Auto extends SelectableOpMode {
 class Red extends OpMode{
     @Override
     public void init() {
+        telemetry.addLine("DO NOT USE THIS");
         telemetry.addLine("I'm Red Bro");
     }
     @Override
@@ -304,6 +305,7 @@ class JAuto extends OpMode{
     public void loop(){
         follower.update();
         telemetry.update();
+        telemetry.addLine("DO NOT USE THIS");
         telemetry.addData("Current ", current_path.name());
         telemetry.addData("Fire condition ", System.currentTimeMillis() + fire_pause > last_fire_time);
         telemetry.addData("Divert condition ", System.currentTimeMillis() + divert_wait > divert_time);
@@ -442,6 +444,7 @@ class CarpI1 extends OpMode{
         leftFeeder = hardwareMap.get(CRServo.class, "indexLeft");
         rightFeeder = hardwareMap.get(CRServo.class, "indexRight");
         diverter = hardwareMap.get(Servo.class, "modulator");
+        telemetry.addLine("DO NOT USE THIS");
         telemetry.addLine("new");
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
@@ -637,6 +640,7 @@ class Blue_Auto_1 extends OpMode{
         limelight = hardwareMap.get(Limelight3A.class,"limelight");
         limelight.setPollRateHz(100);
         limelight.start();
+        telemetry.addLine("DO NOT USE THIS");
         telemetry.addLine("I'm Blue Bro");
         leftLaunchState = LaunchState.IDLE;
         rightLaunchState = LaunchState.IDLE;
@@ -1271,6 +1275,7 @@ class Red_Auto_1 extends OpMode{
         /*
          * Tell the driver that initialization is complete.
          */
+        telemetry.addLine("DO NOT USE THIS");
         telemetry.addData("Status", "Initialized");
     }
     public int fire = 0;
@@ -1875,6 +1880,7 @@ class Aim_Assist extends OpMode {
         limelight.setPollRateHz(100);
         limelight.start();
         telemetry.addLine("I'm Blue Bro");
+        telemetry.addLine("DO NOT USE THIS");
         leftLaunchState = LaunchState.IDLE;
         rightLaunchState = LaunchState.IDLE;
         limelight_thinker = new limelight_thinker(limelight);
@@ -2076,6 +2082,7 @@ class Testing_Blue_A1 extends OpMode{
         rightFeeder = hardwareMap.get(CRServo.class, "indexRight");
         diverter = hardwareMap.get(Servo.class, "modulator");
         telemetry.addLine("new");
+        telemetry.addLine("DO NOT USE THIS");
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
          * because the axles point in opposite directions. Pushing the left stick forward
