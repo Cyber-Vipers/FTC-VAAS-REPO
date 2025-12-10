@@ -14,9 +14,12 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.*;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
+import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.launchLeft;
+import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.launchRight;
 
 
 @Autonomous(name = "Red Close Auto")
@@ -37,6 +40,9 @@ public class Red_Close_Auto extends OpMode {
     private LaunchState leftLaunchState = LaunchState.IDLE;
     private LaunchState rightLaunchState = LaunchState.IDLE;
     public DcMotor feeder;
+    public double first_wait = 0.55;
+    public double second_wait = 0.65;
+    public double third_wait =  0.80;
     ElapsedTime leftFeederTimer = new ElapsedTime();
     ElapsedTime rightFeederTimer = new ElapsedTime();
     final double FEED_TIME_SECONDS = 1.45; //The feeder servos run this long when a shot is requested.
@@ -229,61 +235,61 @@ public class Red_Close_Auto extends OpMode {
                 diverterDirection = DiverterDirection.RIGHT;
                 diverter.setPosition(RIGHT_POSITION);
                 if (follower.atParametricEnd()) {
-                if (fire == 0) {
-                    last_fire_time = System.currentTimeMillis();
-                    fire = 1;
-                }
-                if (last_fire_time + (fire_wait - (5000)) <= System.currentTimeMillis()) {
-                    switch (obelisk) {
-                        case 21:
-                            //Left Right Right
-                            // aka Green Purple Purple
-                            if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchLeft(true);
-                            }
-                            if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true);
-                            }
-                            if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
-
-                                launchRight(true);
-                            }
-                            break;
-                        case 22:
-                            // Right Left Right
-                            // aka Purple Green Purple
-                            if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true);
-                            }
-                            if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchLeft(true);
-                            }
-                            if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
-
-                                launchRight(true);
-                            }
-                            break;
-                        case 23:
-                            // Right Right Left
-                            // aka Purple Purple Green 😎
-                            if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true);
-                            }
-                            if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true);
-                            }
-                            if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
-
-                                launchLeft(true);
-                            }
-                            break;
+                    if (fire == 0) {
+                        last_fire_time = System.currentTimeMillis();
+                        fire = 1;
                     }
-                }
+                    if (last_fire_time + (fire_wait - (5000)) <= System.currentTimeMillis()) {
+                        switch (obelisk) {
+                            case 21:
+                                //Left Right Right
+                                // aka Green Purple Purple
+                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.CLOSE);
+                                }
+                                if (last_fire_time + (fire_wait * second_wait /*originally 0.6 */) <= System.currentTimeMillis()) {
+                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                }
+                                if (last_fire_time + (fire_wait * third_wait /* Originally 0.7*/) <= System.currentTimeMillis()) {
 
-                if (last_fire_time + fire_wait <= System.currentTimeMillis()) {
-                    // Then go to next path
-                    currentpath = paths.Path3;
-                }
+                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                }
+                                break;
+                            case 22:
+                                // Right Left Right
+                                // aka Purple Green Purple
+                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                }
+                                if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
+                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                }
+                                if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
+
+                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                }
+                                break;
+                            case 23:
+                                // Right Right Left
+                                // aka Purple Purple Green 😎
+                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                }
+                                if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
+                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                }
+                                if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
+
+                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                }
+                                break;
+                        }
+                    }
+
+                    if (last_fire_time + fire_wait <= System.currentTimeMillis()) {
+                        // Then go to next path
+                        currentpath = paths.Path3;
+                    }
 
                 }
                 break;
@@ -301,6 +307,8 @@ public class Red_Close_Auto extends OpMode {
                 if (follower.atParametricEnd()) {
                     follower.setMaxPower(0.5);
                     follower.followPath(Ze_Paths.Path4);
+                    diverterDirection = DiverterDirection.LEFT;
+                    diverter.setPosition(LEFT_POSITION);
                     currentpath = paths.Path4;
 
                 }
@@ -323,60 +331,60 @@ public class Red_Close_Auto extends OpMode {
             case Path6Fire:
                 //wait 3 seconds
                 if (follower.atParametricEnd()) {
-                if (fire == 1) {
-                    last_fire_time = System.currentTimeMillis();
-                    fire = 2;
-                }
-                if (last_fire_time + (fire_wait - (5000)) <= System.currentTimeMillis()) {
+                    if (fire == 1) {
+                        last_fire_time = System.currentTimeMillis();
+                        fire = 2;
+                    }
+                    if (last_fire_time + (fire_wait - (5000)) <= System.currentTimeMillis()) {
                         switch (obelisk) {
                             case 21:
                                 //Left Right Right
                                 // aka Green Purple Purple
-                                if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                    launchLeft(true);
+                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
                                 }
-                                if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                    launchRight(true);
+                                if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
+                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
                                 }
-                                if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
+                                if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
 
-                                    launchRight(true);
+                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
                                 }
                                 break;
                             case 22:
                                 // Right Left Right
                                 // aka Purple Green Purple
-                                if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                    launchRight(true);
+                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
                                 }
-                                if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                    launchLeft(true);
+                                if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
+                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
                                 }
-                                if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
+                                if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
 
-                                    launchRight(true);
+                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
                                 }
                                 break;
                             case 23:
                                 // Right Right Left
                                 // aka Purple Purple Green 😎
-                                if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                    launchRight(true);
+                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
                                 }
-                                if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                    launchRight(true);
+                                if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
+                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
                                 }
-                                if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
+                                if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
 
-                                    launchLeft(true);
+                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
                                 }
                                 break;
                         }
                     }
-                if (last_fire_time + fire_wait <= System.currentTimeMillis()) {
-                    //Follow Next Path
-                    currentpath = paths.Path7;
-                }
+                    if (last_fire_time + fire_wait <= System.currentTimeMillis()) {
+                        //Follow Next Path
+                        currentpath = paths.Path7;
+                    }
                 }
                 break;
             case Path7:
@@ -389,8 +397,8 @@ public class Red_Close_Auto extends OpMode {
                 // Slow your roll bud
                 if (follower.atParametricEnd()) {
                     follower.setMaxPower(0.5);
-                        follower.followPath(Ze_Paths.Path8);
-                        currentpath = paths.Path9;
+                    follower.followPath(Ze_Paths.Path8);
+                    currentpath = paths.Path9;
                 }
             case Path9:
                 // TODO swap diverter
@@ -517,65 +525,6 @@ public class Red_Close_Auto extends OpMode {
                     .build();
         }
         }
-    void launchLeft(boolean shotRequested) {
-        switch (leftLaunchState) {
-            case IDLE:
-                if (shotRequested) {
-                    leftLaunchState = LaunchState.SPIN_UP;
-                }
-                break;
-            case SPIN_UP:
-                leftLauncher.setVelocity(launcherTarget);
-                rightLauncher.setVelocity(launcherTarget);
-                if (leftLauncher.getVelocity() > launcherMin) {
-                    leftLaunchState = LaunchState.LAUNCH;
-                }
-                break;
-            case LAUNCH:
-                leftFeeder.setPosition(left_feeder_up);
-                feeder.setPower(1);
-                leftFeederTimer.reset();
-                leftLaunchState = LaunchState.LAUNCHING;
-                break;
-            case LAUNCHING:
-                if (leftFeederTimer.seconds() > FEED_TIME_SECONDS) {
-                    feeder.setPower(0);
-                    leftLaunchState = LaunchState.IDLE;
-                    leftFeeder.setPosition(left_feeder_block);
-
-                }
-                break;
-        }
-    }
-
-    void launchRight(boolean shotRequested) {
-        switch (rightLaunchState) {
-            case IDLE:
-                if (shotRequested) {
-                    rightLaunchState = LaunchState.SPIN_UP;
-                }
-                break;
-            case SPIN_UP:
-                leftLauncher.setVelocity(launcherTarget);
-                rightLauncher.setVelocity(launcherTarget);
-                if (leftLauncher.getVelocity() > launcherMin) {
-                    rightLaunchState = LaunchState.LAUNCH;
-                }
-                break;
-            case LAUNCH:
-                rightFeeder.setPosition(right_feeder_up);
-                feeder.setPower(1);
-                rightFeederTimer.reset();
-                rightLaunchState = LaunchState.LAUNCHING;
-                break;
-            case LAUNCHING:
-                if (rightFeederTimer.seconds() > FEED_TIME_SECONDS) {
-                    feeder.setPower(0);
-                    rightLaunchState = LaunchState.IDLE;
-                    rightFeeder.setPosition(right_feeder_block);
-                }
-                break;
-        }
-    }}
+}
 
 

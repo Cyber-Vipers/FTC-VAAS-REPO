@@ -4,6 +4,8 @@ import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+
+import org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher;
 import org.firstinspires.ftc.teamcode.Competition.opmodes.Teleop.Competition_Teleop;
 import org.firstinspires.ftc.teamcode.Competition.sensors.limelight_thinker;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
@@ -99,15 +101,15 @@ public class Test_01 extends OpMode {
 
         //Slow Mode
         if (gamepad1.right_bumper) {
-            Competition_Teleop.LauncherDistance launcherDistance = Competition_Teleop.LauncherDistance.FAR;
+            Launcher.LauncherDistance launcherDistance = Launcher.LauncherDistance.FAR;
             Object launcherMin;
             Object launcherTarget;
-            if (launcherDistance == Competition_Teleop.LauncherDistance.FAR) {
-                launcherDistance = Competition_Teleop.LauncherDistance.CLOSE;
+            if (launcherDistance == Launcher.LauncherDistance.FAR) {
+                launcherDistance = Launcher.LauncherDistance.CLOSE;
                 launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY;
                 launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
             } else {
-                launcherDistance = Competition_Teleop.LauncherDistance.CLOSE;
+                launcherDistance = Launcher.LauncherDistance.CLOSE;
                 launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY;
                 launcherMin = LAUNCHER_FAR_MIN_VELOCITY;
 

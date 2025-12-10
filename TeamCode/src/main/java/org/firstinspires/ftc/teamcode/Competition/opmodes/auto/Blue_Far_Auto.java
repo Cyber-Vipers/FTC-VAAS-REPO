@@ -2,6 +2,9 @@ package org.firstinspires.ftc.teamcode.Competition.opmodes.auto;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
+import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.launchLeft;
+import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.launchRight;
+
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.field.FieldManager;
 import com.bylazar.field.PanelsField;
@@ -19,6 +22,8 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher;
 
 @Configurable
 public class Blue_Far_Auto extends OpMode {
@@ -213,42 +218,42 @@ public class Blue_Far_Auto extends OpMode {
                             //Left Right Right
                             // aka Green Purple Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchLeft(true);
+                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             break;
                         case 22:
                             // Right Left Right
                             // aka Purple Green Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchLeft(true);
+                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             break;
                         case 23:
                             // Right Right Left
                             // aka Purple Purple Green 😎
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchLeft(true);
+                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             break;
                     }
@@ -300,42 +305,42 @@ public class Blue_Far_Auto extends OpMode {
                             //Left Right Right
                             // aka Green Purple Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchLeft(true);
+                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             break;
                         case 22:
                             // Right Left Right
                             // aka Purple Green Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchLeft(true);
+                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             break;
                         case 23:
                             // Right Right Left
                             // aka Purple Purple Green 😎
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchLeft(true);
+                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             break;
                     }
@@ -386,42 +391,42 @@ public class Blue_Far_Auto extends OpMode {
                             //Left Right Right
                             // aka Green Purple Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchLeft(true);
+                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             break;
                         case 22:
                             // Right Left Right
                             // aka Purple Green Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchLeft(true);
+                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             break;
                         case 23:
                             // Right Right Left
                             // aka Purple Purple Green 😎
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchLeft(true);
+                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             break;
                     }
@@ -465,42 +470,42 @@ public class Blue_Far_Auto extends OpMode {
                             //Left Right Right
                             // aka Green Purple Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchLeft(true);
+                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             break;
                         case 22:
                             // Right Left Right
                             // aka Purple Green Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchLeft(true);
+                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             break;
                         case 23:
                             // Right Right Left
                             // aka Purple Purple Green 😎
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true);
+                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchLeft(true);
+                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.FAR);
                             }
                             break;
                     }
@@ -637,64 +642,4 @@ public class Blue_Far_Auto extends OpMode {
                     .build();
         }
         }
-    void launchLeft(boolean shotRequested) {
-        switch (leftLaunchState) {
-            case IDLE:
-                if (shotRequested) {
-                    leftLaunchState = LaunchState.SPIN_UP;
-                }
-                break;
-            case SPIN_UP:
-                leftLauncher.setVelocity(launcherTarget);
-                rightLauncher.setVelocity(launcherTarget);
-                if (leftLauncher.getVelocity() > launcherMin) {
-                    leftLaunchState = LaunchState.LAUNCH;
-                }
-                break;
-            case LAUNCH:
-                leftFeeder.setPosition(left_feeder_up);
-                feeder.setPower(1);
-                leftFeederTimer.reset();
-                leftLaunchState = LaunchState.LAUNCHING;
-                break;
-            case LAUNCHING:
-                if (leftFeederTimer.seconds() > FEED_TIME_SECONDS) {
-                    feeder.setPower(0);
-                    leftLaunchState = LaunchState.IDLE;
-                    leftFeeder.setPosition(left_feeder_block);
-
-                }
-                break;
-        }
-    }
-
-    void launchRight(boolean shotRequested) {
-        switch (rightLaunchState) {
-            case IDLE:
-                if (shotRequested) {
-                    rightLaunchState = LaunchState.SPIN_UP;
-                }
-                break;
-            case SPIN_UP:
-                leftLauncher.setVelocity(launcherTarget);
-                rightLauncher.setVelocity(launcherTarget);
-                if (leftLauncher.getVelocity() > launcherMin) {
-                    rightLaunchState = LaunchState.LAUNCH;
-                }
-                break;
-            case LAUNCH:
-                rightFeeder.setPosition(right_feeder_up);
-                feeder.setPower(1);
-                rightFeederTimer.reset();
-                rightLaunchState = LaunchState.LAUNCHING;
-                break;
-            case LAUNCHING:
-                if (rightFeederTimer.seconds() > FEED_TIME_SECONDS) {
-                    feeder.setPower(0);
-                    rightLaunchState = LaunchState.IDLE;
-                    rightFeeder.setPosition(right_feeder_block);
-                }
-                break;
-        }
-    }
 }

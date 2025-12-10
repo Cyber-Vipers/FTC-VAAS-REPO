@@ -24,10 +24,14 @@ package org.firstinspires.ftc.teamcode.Competition.opmodes.Teleop;/*   MIT Licen
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
+import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.launchLeft;
+import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.launchRight;
+
 import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -38,6 +42,8 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher;
 import org.firstinspires.ftc.teamcode.Runt.opmodes.DecodeRi3D;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntVisualConstants;
@@ -49,14 +55,14 @@ import java.util.function.Supplier;
  * 2025-2026 FIRST® Tech Challenge season DECODE™!
  */
 @Configurable
-@TeleOp(name = "Competition Teleop", group = "Comp")
+@TeleOp(name = "Competition Teleop", group = "Comp" )
 //@Disabled
 public class Competition_Teleop extends OpMode {
     public static double left_feeder_block = 0.25;
     public static double right_feeder_block = 0.25;
     public static double right_feeder_up = 0;
     public static double left_feeder_up = 1;
-    final double FEED_TIME_SECONDS = 1.75; //The feeder servos run this long when a shot is requested
+    final double FEED_TIME_SECONDS = 1; //The feeder servos run this long when a shot is requested
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
     final double FULL_SPEED = 1.0;
 
@@ -77,6 +83,7 @@ public class Competition_Teleop extends OpMode {
     // Declare OpMode members.
     private DcMotor leftFrontDrive = null;
     private DcMotor rightFrontDrive = null;
+    private RevColorSensorV3 color1;
     private DcMotor leftBackDrive = null;
     private DcMotor rightBackDrive = null;
     private DcMotorEx leftLauncher = null;
@@ -117,14 +124,11 @@ public class Competition_Teleop extends OpMode {
 
     private IntakeState intakeState = IntakeState.OFF;
 
-    public enum LauncherDistance {
-        CLOSE,
-        FAR;
-    }
+
     private Follower follower;
     public static Pose startingPose; //See ExampleAuto to understand how to use this
     private boolean automatedDrive;
-    private LauncherDistance launcherDistance = LauncherDistance.CLOSE;
+    private Launcher.LauncherDistance launcherDistance = Launcher.LauncherDistance.CLOSE;
 
     // Setup a variable for each drive wheel to save power level for telemetry
     double leftFrontPower;
@@ -151,6 +155,9 @@ public class Competition_Teleop extends OpMode {
         rightFeeder = hardwareMap.get(Servo.class, "indexRight");
         diverter = hardwareMap.get(Servo.class, "modulator");
         feeder = hardwareMap.get(DcMotor.class, "feeder");
+        color1 = hardwareMap.get(RevColorSensorV3.class, "color1");
+
+
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
          * because the axles point in opposite directions. Pushing the left stick forward
@@ -209,6 +216,9 @@ public class Competition_Teleop extends OpMode {
      */
     @Override
     public void init_loop() {
+        telemetry.addData("ARGB", color1.argb());
+        telemetry.addData("Distance", color1.getDistance(DistanceUnit.CM));
+        telemetry.addData("Blah",color1.getLightDetected());
     }
 
     /*
@@ -224,15 +234,28 @@ public class Competition_Teleop extends OpMode {
     /*
      * Code to run REPEATEDLY after the driver hits START but before they hit STOP
      */
+    public long last_dis_change = 0;
+    public static long dist_wait = 500;
+    public double slow_multiplier = 1.5;
     @Override
     public void loop() {
         follower.update();
-        mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+        telemetry.addData("ARGB", color1.argb());
+        telemetry.addData("Distance", color1.getDistance(DistanceUnit.CM));
+        telemetry.addData("Blah",color1.getLightDetected());
+        double right_trigger;
 
+        mecanumDrive(-gamepad1.left_stick_y - (gamepad1.right_trigger / slow_multiplier), gamepad1.left_stick_x - (gamepad1.right_trigger / slow_multiplier), gamepad1.right_stick_x - (gamepad1.right_trigger / slow_multiplier));
+        if (gamepad1.right_trigger >= 0.1) {
+            slowMode = true;
+        } else {
+            slowMode = false;
+        }
         /*
          * Here we give the user control of the speed of the launcher motor without automatically
          * queuing a shot.
          */
+
         if (gamepad1.y) {
             leftLauncher.setVelocity(launcherTarget);
             rightLauncher.setVelocity(launcherTarget);
@@ -260,7 +283,7 @@ public class Competition_Teleop extends OpMode {
             }
         }
         if (gamepad1.left_bumper) {
-            if (last_divert_time + divert_cooldown <= System.currentTimeMillis()) {
+            if (last_divert_time + divert_cooldown < System.currentTimeMillis()) {
                 switch (diverterDirection) {
                     case LEFT:
                         diverterDirection = DiverterDirection.RIGHT;
@@ -279,8 +302,8 @@ public class Competition_Teleop extends OpMode {
         /*
          * Now we call our "Launch" function.
          */
-        launchLeft(gamepad1.dpadLeftWasPressed());
-        launchRight(gamepad1.dpadRightWasPressed());
+        launchLeft(gamepad1.dpadLeftWasPressed(),leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,launcherDistance);
+        launchRight(gamepad1.dpadRightWasPressed(),leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,launcherDistance);
 
         /*
          * Show the state and motor powers
@@ -316,7 +339,7 @@ public class Competition_Teleop extends OpMode {
                 //This is how it looks with slowMode on
             else follower.setTeleOpDrive(
                     -gamepad1.left_stick_y * slowModeMultiplier,
-                    -gamepad1.left_stick_x * slowModeMultiplier,
+                    -gamepad1.left_stick_x * slowModeMultiplier ,
                     -gamepad1.right_stick_x * slowModeMultiplier * 0.8,
                     true // Robot Centric
             );
@@ -332,78 +355,23 @@ public class Competition_Teleop extends OpMode {
 
         //Slow Mode
         if (gamepad1.right_bumper) {
-            if (launcherDistance == LauncherDistance.FAR) {
-                launcherDistance = LauncherDistance.CLOSE;
+            if (last_dis_change +dist_wait <= System.currentTimeMillis()) {
+            if (launcherDistance == Launcher.LauncherDistance.FAR) {
+                launcherDistance = Launcher.LauncherDistance.CLOSE;
                 launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY;
                 launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
             } else {
-                launcherDistance = LauncherDistance.FAR;
+                launcherDistance = Launcher.LauncherDistance.FAR;
                 launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY;
                 launcherMin = LAUNCHER_FAR_MIN_VELOCITY;
             }
+            last_dis_change = System.currentTimeMillis();
         }
+    }}
+
+
+
+
+
+
     }
-
-
-
-    void launchLeft(boolean shotRequested) {
-        switch (leftLaunchState) {
-            case IDLE:
-                if (shotRequested) {
-                    leftLaunchState = LaunchState.SPIN_UP;
-                }
-                break;
-            case SPIN_UP:
-                leftLauncher.setVelocity(launcherTarget);
-                rightLauncher.setVelocity(launcherTarget);
-                if (leftLauncher.getVelocity() > launcherMin) {
-                    leftLaunchState = LaunchState.LAUNCH;
-                }
-                break;
-            case LAUNCH:
-                leftFeeder.setPosition(left_feeder_up);
-                feeder.setPower(1);
-                leftFeederTimer.reset();
-                leftLaunchState = LaunchState.LAUNCHING;
-                break;
-            case LAUNCHING:
-                if (leftFeederTimer.seconds() > FEED_TIME_SECONDS) {
-                    feeder.setPower(0);
-                    leftLaunchState = LaunchState.IDLE;
-                    leftFeeder.setPosition(left_feeder_block);
-
-                }
-                break;
-        }
-    }
-
-    void launchRight(boolean shotRequested) {
-        switch (rightLaunchState) {
-            case IDLE:
-                if (shotRequested) {
-                    rightLaunchState = LaunchState.SPIN_UP;
-                }
-                break;
-            case SPIN_UP:
-                leftLauncher.setVelocity(launcherTarget);
-                rightLauncher.setVelocity(launcherTarget);
-                if (leftLauncher.getVelocity() > launcherMin) {
-                    rightLaunchState = LaunchState.LAUNCH;
-                }
-                break;
-            case LAUNCH:
-                rightFeeder.setPosition(right_feeder_up);
-                feeder.setPower(1);
-                rightFeederTimer.reset();
-                rightLaunchState = LaunchState.LAUNCHING;
-                break;
-            case LAUNCHING:
-                if (rightFeederTimer.seconds() > FEED_TIME_SECONDS) {
-                    feeder.setPower(0);
-                    rightLaunchState = LaunchState.IDLE;
-                    rightFeeder.setPosition(right_feeder_block);
-                }
-                break;
-        }
-    }
-}
