@@ -54,7 +54,7 @@ public class RuntOdometryWheelsConstants {
     public static PathConstraints pathConstraints = new PathConstraints(
             0.99,
             100,
-            2,
+            1,
             2
     );
 

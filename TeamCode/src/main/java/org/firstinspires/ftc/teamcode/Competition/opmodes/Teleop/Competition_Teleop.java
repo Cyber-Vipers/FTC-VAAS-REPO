@@ -26,28 +26,34 @@ import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
 import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.launchLeft;
 import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.launchRight;
+import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Sphere_Operator.handle_divert;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.configurables.annotations.IgnoreConfigurable;
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
-import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.*;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.Competition.Robot_Composition;
 import org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher;
+import org.firstinspires.ftc.teamcode.Competition.Subsystems.Limelight;
+import org.firstinspires.ftc.teamcode.Competition.Subsystems.Sphere_Operator;
 import org.firstinspires.ftc.teamcode.Runt.opmodes.DecodeRi3D;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntVisualConstants;
 
+import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /*
@@ -83,7 +89,8 @@ public class Competition_Teleop extends OpMode {
     // Declare OpMode members.
     private DcMotor leftFrontDrive = null;
     private DcMotor rightFrontDrive = null;
-    private RevColorSensorV3 color1;
+    private Rev2mDistanceSensor colorleft;
+    private Rev2mDistanceSensor colorright;
     private DcMotor leftBackDrive = null;
     private DcMotor rightBackDrive = null;
     private DcMotorEx leftLauncher = null;
@@ -106,6 +113,7 @@ public class Competition_Teleop extends OpMode {
         LAUNCHING,
     }
     private LaunchState leftLaunchState;
+    Robot_Composition robotComposition;
     private LaunchState rightLaunchState;
     public long last_divert_time = 0;
     public long divert_cooldown = 1000;
@@ -124,11 +132,15 @@ public class Competition_Teleop extends OpMode {
 
     private IntakeState intakeState = IntakeState.OFF;
 
-
+    public static int colorleftgain = 16;
+    public static int colorrightgain = 16;
     private Follower follower;
     public static Pose startingPose; //See ExampleAuto to understand how to use this
     private boolean automatedDrive;
     private Launcher.LauncherDistance launcherDistance = Launcher.LauncherDistance.CLOSE;
+    public Servo limelight_servo;
+    public Limelight3A limelight;
+
 
     // Setup a variable for each drive wheel to save power level for telemetry
     double leftFrontPower;
@@ -141,9 +153,10 @@ public class Competition_Teleop extends OpMode {
      */
     @Override
     public void init() {
+        telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
         leftLaunchState = LaunchState.IDLE;
         rightLaunchState = LaunchState.IDLE;
-
+        limelight_servo = hardwareMap.get(Servo.class, "limelightServo");
         leftFrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
         rightFrontDrive = hardwareMap.get(DcMotor.class, "frontRight");
         leftBackDrive = hardwareMap.get(DcMotor.class, "backLeft");
@@ -155,7 +168,9 @@ public class Competition_Teleop extends OpMode {
         rightFeeder = hardwareMap.get(Servo.class, "indexRight");
         diverter = hardwareMap.get(Servo.class, "modulator");
         feeder = hardwareMap.get(DcMotor.class, "feeder");
-        color1 = hardwareMap.get(RevColorSensorV3.class, "color1");
+        colorleft = hardwareMap.get(Rev2mDistanceSensor.class, "color2");
+        colorright = hardwareMap.get(Rev2mDistanceSensor.class, "color1");
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
 
         /*
@@ -202,8 +217,26 @@ public class Competition_Teleop extends OpMode {
          * both work to feed the ball into the robot.
          */
         follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
+
         follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
         follower.update();
+        robotComposition = new Robot_Composition(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, leftLauncher, rightLauncher, intake, feeder, leftFeeder, rightFeeder,colorleft,colorright,follower,telemetry,diverter,limelight_servo,limelight);
+
+        // if preload set it
+        Sphere_Operator.Sphere left_inside = new Sphere_Operator.Sphere(
+                new Sphere_Operator.Sphere_Handling_Constants(
+                        Sphere_Operator.Ball_Handling_Side.Right,
+                        0
+                )
+        );
+        Sphere_Operator.Sphere right_inside = new Sphere_Operator.Sphere(
+                new Sphere_Operator.Sphere_Handling_Constants(
+                        Sphere_Operator.Ball_Handling_Side.Right,
+                        0
+                )
+        );
+        robotComposition.left_inside = left_inside;
+        robotComposition.right_inside = right_inside;
         /*
          * Tell the driver that initialization is complete.
          */
@@ -216,9 +249,10 @@ public class Competition_Teleop extends OpMode {
      */
     @Override
     public void init_loop() {
-        telemetry.addData("ARGB", color1.argb());
-        telemetry.addData("Distance", color1.getDistance(DistanceUnit.CM));
-        telemetry.addData("Blah",color1.getLightDetected());
+        telemetry.addData("Distance", colorleft.getDistance(DistanceUnit.CM));
+        Limelight.all_knowing_horse(robotComposition);
+
+
     }
 
     /*
@@ -232,19 +266,46 @@ public class Competition_Teleop extends OpMode {
     }
 
     /*
-     * Code to run REPEATEDLY after the driver hits START but before they hit STOP
+     * Code9 to run REPEATEDLY after the driver hits START but before they hit STOP
      */
+    public int last_left_inside = 0;
+    public int last_right_inside = 0;
     public long last_dis_change = 0;
     public static long dist_wait = 500;
     public double slow_multiplier = 1.5;
+
+    public boolean overload = false;
+    public long overload_time = 0;
+    public long overload_wait = 500;
+    public int intake_ran = 0;
+    @IgnoreConfigurable
+    static TelemetryManager telemetryM;
+    public ElapsedTime looptime = new ElapsedTime();
+    public boolean can_distance = false;
+
     @Override
     public void loop() {
         follower.update();
-        telemetry.addData("ARGB", color1.argb());
-        telemetry.addData("Distance", color1.getDistance(DistanceUnit.CM));
-        telemetry.addData("Blah",color1.getLightDetected());
-        double right_trigger;
+        looptime.startTime();
+        double distance_left = colorleft.getDistance(DistanceUnit.CM);
+        double distance_right = colorright.getDistance(DistanceUnit.CM);
+        handle_divert(robotComposition,distance_left,distance_right);
 
+
+        if (gamepad1.right_bumper) {
+            if (last_dis_change +dist_wait <= System.currentTimeMillis()) {
+                if (launcherDistance == Launcher.LauncherDistance.FAR) {
+                    launcherDistance = Launcher.LauncherDistance.CLOSE;
+                    launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY;
+                    launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
+                } else {
+                    launcherDistance = Launcher.LauncherDistance.FAR;
+                    launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY;
+                    launcherMin = LAUNCHER_FAR_MIN_VELOCITY;
+                }
+                last_dis_change = System.currentTimeMillis();
+            }
+        }
         mecanumDrive(-gamepad1.left_stick_y - (gamepad1.right_trigger / slow_multiplier), gamepad1.left_stick_x - (gamepad1.right_trigger / slow_multiplier), gamepad1.right_stick_x - (gamepad1.right_trigger / slow_multiplier));
         if (gamepad1.right_trigger >= 0.1) {
             slowMode = true;
@@ -255,7 +316,15 @@ public class Competition_Teleop extends OpMode {
          * Here we give the user control of the speed of the launcher motor without automatically
          * queuing a shot.
          */
-
+        if (gamepad2.dpad_up) {
+            Limelight.look_up(robotComposition);
+        }
+        if (gamepad2.dpad_down) {
+            Limelight.look_down(robotComposition);
+        }
+        if (gamepad2.dpad_right) {
+            Limelight.look_middle(robotComposition);
+        }
         if (gamepad1.y) {
             leftLauncher.setVelocity(launcherTarget);
             rightLauncher.setVelocity(launcherTarget);
@@ -302,8 +371,11 @@ public class Competition_Teleop extends OpMode {
         /*
          * Now we call our "Launch" function.
          */
-        launchLeft(gamepad1.dpadLeftWasPressed(),leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,launcherDistance);
-        launchRight(gamepad1.dpadRightWasPressed(),leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,launcherDistance);
+
+            launchLeft(gamepad1.dpadLeftWasPressed(),robotComposition,launcherDistance);
+            launchRight(gamepad1.dpadRightWasPressed(),robotComposition,launcherDistance);
+
+
 
         /*
          * Show the state and motor powers
@@ -312,7 +384,8 @@ public class Competition_Teleop extends OpMode {
         telemetry.addData("launch distance", launcherDistance);
         telemetry.addData("Left Launcher Velocity", leftLauncher.getVelocity());
         telemetry.addData("Right Launcher Velocity", rightLauncher.getVelocity());
-
+        telemetry.addData("Loop Time", looptime.milliseconds());
+        looptime.reset();
     }
 
     /*
@@ -321,7 +394,7 @@ public class Competition_Teleop extends OpMode {
     @Override
     public void stop() {
     }
-
+    public static double turn_multipler = 0.8;
     void mecanumDrive(double forward, double strafe, double rotate){
 
         if (!automatedDrive) {
@@ -332,7 +405,7 @@ public class Competition_Teleop extends OpMode {
             if (!slowMode) follower.setTeleOpDrive(
                     -gamepad1.left_stick_y,
                     -gamepad1.left_stick_x,
-                    -gamepad1.right_stick_x * 0.8,
+                    -gamepad1.right_stick_x * turn_multipler,
                     true // Robot Centric
             );
 
@@ -340,7 +413,7 @@ public class Competition_Teleop extends OpMode {
             else follower.setTeleOpDrive(
                     -gamepad1.left_stick_y * slowModeMultiplier,
                     -gamepad1.left_stick_x * slowModeMultiplier ,
-                    -gamepad1.right_stick_x * slowModeMultiplier * 0.8,
+                    -gamepad1.right_stick_x * slowModeMultiplier * turn_multipler,
                     true // Robot Centric
             );
         }
@@ -352,26 +425,11 @@ public class Competition_Teleop extends OpMode {
             follower.startTeleopDrive();
             automatedDrive = false;
         }
-
-        //Slow Mode
-        if (gamepad1.right_bumper) {
-            if (last_dis_change +dist_wait <= System.currentTimeMillis()) {
-            if (launcherDistance == Launcher.LauncherDistance.FAR) {
-                launcherDistance = Launcher.LauncherDistance.CLOSE;
-                launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY;
-                launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
-            } else {
-                launcherDistance = Launcher.LauncherDistance.FAR;
-                launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY;
-                launcherMin = LAUNCHER_FAR_MIN_VELOCITY;
-            }
-            last_dis_change = System.currentTimeMillis();
-        }
-    }}
-
-
-
-
-
-
     }
+
+
+
+
+
+
+}

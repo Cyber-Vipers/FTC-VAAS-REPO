@@ -9,17 +9,23 @@ import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
+import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.*;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.Competition.Robot_Composition;
 import org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher;
+import org.firstinspires.ftc.teamcode.Competition.Subsystems.Sphere_Operator;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.launchLeft;
 import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.launchRight;
+
+import java.util.ArrayList;
 
 
 @Autonomous(name = "Red Close Auto")
@@ -49,6 +55,8 @@ public class Red_Close_Auto extends OpMode {
     private static final FieldManager panelsField = PanelsField.INSTANCE.getField();
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
     final double FULL_SPEED = 1.0;
+    Rev2mDistanceSensor color1;
+    Rev2mDistanceSensor color2;
 
     final double LAUNCHER_CLOSE_TARGET_VELOCITY = 1150; //in ticks/second for the close goal.
     final double LAUNCHER_CLOSE_MIN_VELOCITY = 1130; //minimum required to start a shot for close goal.
@@ -63,6 +71,7 @@ public class Red_Close_Auto extends OpMode {
 
     final double LEFT_POSITION = 0.2962; //the left and right position for the diverter servo
     final double RIGHT_POSITION = 0;
+    Robot_Composition robotComposition;
 
     // Declare OpMode members.
     private enum DiverterDirection {
@@ -79,6 +88,7 @@ public class Red_Close_Auto extends OpMode {
     private DcMotor intake = null;
     private Servo leftFeeder = null;
     private Servo rightFeeder = null;
+    public Servo limelight_servo;
     private Servo diverter = null;
     private Follower follower;
     public Limelight3A limelight;
@@ -86,7 +96,7 @@ public class Red_Close_Auto extends OpMode {
     public void init() {
         leftLaunchState = LaunchState.IDLE;
         rightLaunchState = LaunchState.IDLE;
-
+        limelight_servo = hardwareMap.get(Servo.class, "limelightServo");
         leftFrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
         rightFrontDrive = hardwareMap.get(DcMotor.class, "frontRight");
         leftBackDrive = hardwareMap.get(DcMotor.class, "backLeft");
@@ -98,6 +108,9 @@ public class Red_Close_Auto extends OpMode {
         rightFeeder = hardwareMap.get(Servo.class, "indexRight");
         diverter = hardwareMap.get(Servo.class, "modulator");
         feeder = hardwareMap.get(DcMotor.class, "feeder");
+        color1 = hardwareMap.get(Rev2mDistanceSensor.class,"color1");
+        color2 = hardwareMap.get(Rev2mDistanceSensor.class, "color2");
+
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
          * because the axles point in opposite directions. Pushing the left stick forward
@@ -144,6 +157,22 @@ public class Red_Close_Auto extends OpMode {
         follower.setStartingPose(new Pose(127.52329576522467,125.1409210488048,Math.toRadians(35)));
         follower.update();
         Ze_Paths = new Da_Paths(follower);
+        robotComposition = new Robot_Composition(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, leftLauncher, rightLauncher, intake, feeder, leftFeeder, rightFeeder,color1,color2,follower,telemetry,diverter,limelight_servo,limelight);
+        // if preload set it
+        Sphere_Operator.Sphere left_inside = new Sphere_Operator.Sphere(
+                new Sphere_Operator.Sphere_Handling_Constants(
+                        Sphere_Operator.Ball_Handling_Side.Right,
+                        0
+                )
+        );
+        Sphere_Operator.Sphere right_inside = new Sphere_Operator.Sphere(
+                new Sphere_Operator.Sphere_Handling_Constants(
+                        Sphere_Operator.Ball_Handling_Side.Right,
+                        0
+                )
+        );
+        robotComposition.left_inside = left_inside;
+        robotComposition.right_inside = right_inside;
         /*
          * Tell the driver that initialization is complete.
          */
@@ -245,42 +274,42 @@ public class Red_Close_Auto extends OpMode {
                                 //Left Right Right
                                 // aka Green Purple Purple
                                 if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
-                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder, Launcher.LauncherDistance.CLOSE);
+                                    launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 if (last_fire_time + (fire_wait * second_wait /*originally 0.6 */) <= System.currentTimeMillis()) {
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 if (last_fire_time + (fire_wait * third_wait /* Originally 0.7*/) <= System.currentTimeMillis()) {
 
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 break;
                             case 22:
                                 // Right Left Right
                                 // aka Purple Green Purple
                                 if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
-                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
 
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 break;
                             case 23:
                                 // Right Right Left
                                 // aka Purple Purple Green 😎
                                 if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
 
-                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 break;
                         }
@@ -341,42 +370,42 @@ public class Red_Close_Auto extends OpMode {
                                 //Left Right Right
                                 // aka Green Purple Purple
                                 if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
-                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
 
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 break;
                             case 22:
                                 // Right Left Right
                                 // aka Purple Green Purple
                                 if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
-                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
 
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 break;
                             case 23:
                                 // Right Right Left
                                 // aka Purple Purple Green 😎
                                 if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
 
-                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
+                                    launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
                                 }
                                 break;
                         }

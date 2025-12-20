@@ -5,6 +5,7 @@ import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.delagate_shots;
 import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.launchLeft;
 import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.launchRight;
+import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Sphere_Operator.handle_divert;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.field.FieldManager;
@@ -18,6 +19,8 @@ import com.pedropathing.paths.callbacks.PathCallback;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
+import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -28,9 +31,14 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.Competition.Robot_Composition;
 import org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher;
+import org.firstinspires.ftc.teamcode.Competition.Subsystems.Sphere_Operator;
 import org.firstinspires.ftc.teamcode.Competition.opmodes.Teleop.Competition_Teleop;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
+
+import java.util.ArrayList;
 
 
 @Configurable
@@ -43,8 +51,8 @@ public class Blue_Close_Auto extends OpMode {
     public static double right_feeder_block = 0.25;
     public static double right_feeder_up = 0;
     public static double left_feeder_up = 1;
-    public static double shoot_degree = 160;
-    public static Pose shoot_pos = new Pose(81.140,115.832,Math.toRadians(shoot_degree));
+    public static double shoot_degree = 142;
+    public static Pose shoot_pos = new Pose(57.42056074766355,106.54205607476636,Math.toRadians(shoot_degree));
 
     public DcMotor feeder;
     private enum LaunchState {
@@ -86,19 +94,23 @@ public class Blue_Close_Auto extends OpMode {
     private DcMotor rightFrontDrive = null;
     private DcMotor leftBackDrive = null;
     private DcMotor rightBackDrive = null;
+    public Servo limelight_servo;
     private DcMotorEx leftLauncher = null;
     private DcMotorEx rightLauncher = null;
     private DcMotor intake = null;
     private Servo leftFeeder = null;
     private Servo rightFeeder = null;
     private Servo diverter = null;
+    public Rev2mDistanceSensor color1;
+    public Rev2mDistanceSensor color2;
+    public Robot_Composition robotComposition;
     private Follower follower;
     public Limelight3A limelight;
     @Override
     public void init() {
         leftLaunchState = LaunchState.IDLE;
         rightLaunchState =LaunchState.IDLE;
-
+        limelight_servo = hardwareMap.get(Servo.class, "limelightServo");
         leftFrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
         rightFrontDrive = hardwareMap.get(DcMotor.class, "frontRight");
         leftBackDrive = hardwareMap.get(DcMotor.class, "backLeft");
@@ -110,6 +122,8 @@ public class Blue_Close_Auto extends OpMode {
         rightFeeder = hardwareMap.get(Servo.class, "indexRight");
         diverter = hardwareMap.get(Servo.class, "modulator");
         feeder = hardwareMap.get(DcMotor.class, "feeder");
+        color1 = hardwareMap.get(Rev2mDistanceSensor.class,"color2");
+        color2 = hardwareMap.get(Rev2mDistanceSensor.class, "color1");
         limelight = hardwareMap.get(Limelight3A.class,"limelight");
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
@@ -160,9 +174,26 @@ public class Blue_Close_Auto extends OpMode {
         /*
          * Tell the driver that initialization is complete.
          */
+        robotComposition = new Robot_Composition(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, leftLauncher, rightLauncher, intake, feeder, leftFeeder, rightFeeder,color1,color2,follower,telemetry,diverter,limelight_servo,limelight);
+        // if preload set it
+
+        robotComposition.left_inside = new Sphere_Operator.Sphere(
+                new Sphere_Operator.Sphere_Handling_Constants(
+                        Sphere_Operator.Ball_Handling_Side.Left,
+                        0
+                )
+        );
+        robotComposition.right_inside = new Sphere_Operator.Sphere(
+                new Sphere_Operator.Sphere_Handling_Constants(
+                        Sphere_Operator.Ball_Handling_Side.Left,
+                        0
+                )
+        );
         telemetry.addData("Status", "Initialized");
         telemetry.addData("This is the concept for the Close Auto for 20525 with config 'Silly Robot'", "This DOES move (off the table)");
     }
+    public long divert_time;
+    public static long divert_wait = 100;
     public enum paths {
         Path1,
         Path2,
@@ -190,6 +221,7 @@ public class Blue_Close_Auto extends OpMode {
     // Just so we know if it reads
     public boolean obelisk_changed;
     public int obelisk = 21;
+    public int loop = 0;
     // This is a long, 6000 = 6 seconds
     public static long fire_wait = 6000; //Originally 6000;
     // To be changed during runtime
@@ -201,8 +233,10 @@ public class Blue_Close_Auto extends OpMode {
     @Override
     public void loop() {
         // We log both Launcher Velocities
+        handle_divert(robotComposition,color1.getDistance(DistanceUnit.CM),color2.getDistance(DistanceUnit.CM));
         telemetry.addData("Right Launcher", rightLauncher.getVelocity());
         telemetry.addData("Left Launcher", leftLauncher.getVelocity());
+        telemetry.addData("Path Part", paths.valueOf(currentpath.name()));
         // We ALWAYS keep motors spinned up along with Intake
         leftLauncher.setVelocity(launcherTarget);
         rightLauncher.setVelocity(launcherTarget);
@@ -215,6 +249,8 @@ public class Blue_Close_Auto extends OpMode {
         // TODO Make it actually aim
         if ((currentpath != paths.Path2FIRE && currentpath != paths.Path6Fire && currentpath != paths.end)) {
             telemetry.addData("Conditional", (currentpath != paths.Path2FIRE || currentpath != paths.Path6Fire || currentpath != paths.end));
+            rightFeeder.setPosition(right_feeder_block);
+            leftFeeder.setPosition(left_feeder_block);
             feeder.setPower(0);
         }
         // ️️ ‼️*Quick Rule of Thumb*‼️ Only follow new path at parametric end, and do not find parametric end at start of loop
@@ -260,55 +296,62 @@ public class Blue_Close_Auto extends OpMode {
                     last_fire_time = System.currentTimeMillis();
                     fire = 1;
                 }
+
+                telemetry.addData("Time", System.currentTimeMillis());
+                telemetry.addData("Last Fire Time", last_fire_time);
+                telemetry.addData("Through Shot", (System.currentTimeMillis() - last_fire_time + fire_wait));
+                telemetry.addData("Left Flywheel Speed", leftLauncher.getVelocity());
+                telemetry.addData("Right Flywheel Speed", rightLauncher.getVelocity());
+                telemetry.addData("Right Gate Pos", rightFeeder.getPosition());
+                telemetry.addData("Left Gate Pos", leftFeeder.getPosition());
                 if (last_fire_time + (fire_wait - (5000)) <= System.currentTimeMillis()) {
-                    delagate_shots(fire_wait,last_fire_time, Launcher.insides.GPP,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,obelisk, Launcher.LauncherDistance.FAR);
-//                    switch (obelisk) {
-//                        case 21:
-//                            //Left Right Right
-//                            // aka Green Purple Purple
-//                            if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
-//                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-//                            }
-//                            if (last_fire_time + (fire_wait * second_wait /*originally 0.6 */) <= System.currentTimeMillis()) {
-//                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-//                            }
-//                            if (last_fire_time + (fire_wait * third_wait /* Originally 0.7*/) <= System.currentTimeMillis()) {
-//
-//                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-//                            }
-//                            break;
-//                        case 22:
-//                            // Right Left Right
-//                            // aka Purple Green Purple
-//                            if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
-//                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-//                            }
-//                            if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
-//                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-//                            }
-//                            if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
-//
-//                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-//                            }
-//                            break;
-//                        case 23:
-//                            // Right Right Left
-//                            // aka Purple Purple Green 😎
-//                            if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
-//                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-//                            }
-//                            if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
-//                                launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-//                            }
-//                            if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
-//
-//                                launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-//                            }
-//                            break;
-//                    }
+                    switch (obelisk) {
+                        case 21:
+                            //Left Right Right
+                            // aka Green Purple Purple
+                            if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                            }
+                            if (last_fire_time + (fire_wait * second_wait /*originally 0.6 */) <= System.currentTimeMillis()) {
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                            }
+                            if (last_fire_time + (fire_wait * third_wait /* Originally 0.7*/) <= System.currentTimeMillis()) {
+
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                            }
+                            break;
+                        case 22:
+                            // Right Left Right
+                            // aka Purple Green Purple
+                            if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                            }
+                            if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                            }
+                            if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
+
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                            }
+                            break;
+                        case 23:
+                            // Right Right Left
+                            // aka Purple Purple Green 😎
+                            if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                            }
+                            if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                            }
+                            if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
+
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                            }
+                            break;
+                    }
                 }
 
-                if (delagate_shots(fire_wait,last_fire_time, Launcher.insides.GPP,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,obelisk, Launcher.LauncherDistance.FAR)) {
+                if (last_fire_time + fire_wait <= System.currentTimeMillis()) {
                     // Then go to next path
                     currentpath = paths.Path3;
                 }
@@ -321,28 +364,37 @@ public class Blue_Close_Auto extends OpMode {
                 diverter.setPosition(RIGHT_POSITION);
                 if (follower.atParametricEnd()) {
                     follower.followPath(Ze_Paths.Path3);
-                    currentpath = paths.end;
+                    currentpath = paths.Path4;
                 }
                 break;
             case Path4:
                 //Pick up First ball go slow slow (0.5 Power)
                 if (follower.atParametricEnd()) {
-                    follower.setMaxPower(0.5);
+                    follower.setMaxPower(0.4);
                     follower.followPath(Ze_Paths.Path4);
                     diverterDirection = DiverterDirection.LEFT;
                     diverter.setPosition(LEFT_POSITION);
-                    currentpath = paths.Path4;
+                    divert_time = System.currentTimeMillis();
+                    currentpath = paths.Path5;
 
                 }
             case Path5:
                 // Flip Diverter to keep Green on Left, Purple on Right
-                diverterDirection = DiverterDirection.LEFT;
-                diverter.setPosition(LEFT_POSITION);
+                if (divert_time + divert_wait <= System.currentTimeMillis()) {
+                    diverterDirection = DiverterDirection.LEFT;
+                    diverter.setPosition(LEFT_POSITION);
+                } else {
+                    diverterDirection = DiverterDirection.RIGHT;
+                    diverter.setPosition(RIGHT_POSITION);
+                }
                 if (follower.atParametricEnd()) {
                     // Follow Next path
                     follower.followPath(Ze_Paths.Path5);
-                    currentpath = paths.Path4;
+                    currentpath = paths.Path6;
+
+
                 }
+                break;
             case Path6:
                 // Go speedy and then go to shoot
                 if (follower.atParametricEnd()) {
@@ -358,55 +410,56 @@ public class Blue_Close_Auto extends OpMode {
                     fire = 2;
                 }
                 if (last_fire_time + (fire_wait - (5000)) <= System.currentTimeMillis()) {
-                        switch (obelisk) {
-                            case 21:
-                                //Left Right Right
-                                // aka Green Purple Purple
-                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
-                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-                                }
-                                if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-                                }
-                                if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
-
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-                                }
-                                break;
-                            case 22:
-                                // Right Left Right
-                                // aka Purple Green Purple
-                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-                                }
-                                if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
-                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-                                }
-                                if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
-
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-                                }
-                                break;
-                            case 23:
-                                // Right Right Left
-                                // aka Purple Purple Green 😎
-                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-                                }
-                                if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
-                                    launchRight(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-                                }
-                                if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
-
-                                    launchLeft(true,leftLauncher,rightLauncher,feeder,rightFeeder,leftFeeder,Launcher.LauncherDistance.CLOSE);
-                                }
-                                break;
-                        }
+                        delagate_shots(fire_wait,last_fire_time, robotComposition, Launcher.insides.GPP,obelisk, Launcher.LauncherDistance.CLOSE);
+//                        switch (obelisk) {
+//                            case 21:
+//                                //Left Right Right
+//                                // aka Green Purple Purple
+//                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+//                                    launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
+//                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
+//
+//                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                break;
+//                            case 22:
+//                                // Right Left Right
+//                                // aka Purple Green Purple
+//                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+//                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
+//                                    launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
+//
+//                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                break;
+//                            case 23:
+//                                // Right Right Left
+//                                // aka Purple Purple Green 😎
+//                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+//                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
+//                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
+//
+//                                    launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                break;
+//                        }
                     }
-                if (last_fire_time + fire_wait <= System.currentTimeMillis()) {
-                    //Follow Next Path
-                    currentpath = paths.Path7;
-                }
+                    if (delagate_shots(fire_wait,last_fire_time, robotComposition, Launcher.insides.GPP,obelisk, Launcher.LauncherDistance.FAR)) {
+                        // Then go to next path
+                        currentpath = paths.Path7;
+                    }
                 }
                 break;
             case Path7:
@@ -418,7 +471,7 @@ public class Blue_Close_Auto extends OpMode {
             case Path8:
                 // Slow your roll bud
                 if (follower.atParametricEnd()) {
-                    follower.setMaxPower(0.5);
+                    follower.setMaxPower(0.4);
                         follower.followPath(Ze_Paths.Path8);
                         currentpath = paths.Path9;
                 }
@@ -437,18 +490,64 @@ public class Blue_Close_Auto extends OpMode {
                     currentpath = paths.end;
                 }
             case end:
-                //wait 3 seconds
-                // TODO add shooting
+//wait 3 seconds
                 if (follower.atParametricEnd()) {
-                    if (fire == 1) {
+                    if (fire == 2) {
                         last_fire_time = System.currentTimeMillis();
-                        fire = 2;
+                        fire = 3;
                     }
-                    if (last_fire_time + fire_wait <= System.currentTimeMillis()) {
+                    if (last_fire_time + (fire_wait - (5000)) <= System.currentTimeMillis()) {
+                        delagate_shots(fire_wait,last_fire_time, robotComposition, Launcher.insides.GPP,obelisk, Launcher.LauncherDistance.CLOSE);
+//                        switch (obelisk) {
+//                            case 21:
+//                                //Left Right Right
+//                                // aka Green Purple Purple
+//                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+//                                    launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
+//                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
+//
+//                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                break;
+//                            case 22:
+//                                // Right Left Right
+//                                // aka Purple Green Purple
+//                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+//                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
+//                                    launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
+//
+//                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                break;
+//                            case 23:
+//                                // Right Right Left
+//                                // aka Purple Purple Green 😎
+//                                if (last_fire_time + (fire_wait * first_wait)  <= System.currentTimeMillis()) {
+//                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                if (last_fire_time + (fire_wait * second_wait) <= System.currentTimeMillis()) {
+//                                    launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                if (last_fire_time + (fire_wait * third_wait) <= System.currentTimeMillis()) {
+//
+//                                    launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+//                                }
+//                                break;
+//                        }
+                    }
+                    if (delagate_shots(fire_wait,last_fire_time, robotComposition, Launcher.insides.GPP,obelisk, Launcher.LauncherDistance.FAR)) {
+                        // Then go to next path
                         currentpath = paths.end;
                     }
                 }
-                break;
         }
     }
     
@@ -481,11 +580,10 @@ public class Blue_Close_Auto extends OpMode {
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(135), Math.toRadians(shoot_degree))
                     .build();
-
             Path3 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(shoot_pos, new Pose(42.841, 79.626))
+                            new BezierLine(shoot_pos, new Pose(42.841, 83))
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(shoot_degree), Math.toRadians(180))
                     .build();
@@ -493,25 +591,25 @@ public class Blue_Close_Auto extends OpMode {
             Path4 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(42.841, 79.626), new Pose(32.299, 79.402))
+                            new BezierLine(new Pose(42.841, 83), new Pose(32.299, 88))
                     )
-                    .setConstantHeadingInterpolation(Math.toRadians(180))
+                    .setConstantHeadingInterpolation(Math.toRadians(176))
                     .build();
 
             Path5 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(32.299, 79.402), new Pose(14.131, 79.178))
+                            new BezierLine(new Pose(32.299, 88), new Pose(10, 88))
                     )
-                    .setConstantHeadingInterpolation(Math.toRadians(180))
+                    .setConstantHeadingInterpolation(Math.toRadians(176))
                     .build();
 
             Path6 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(14.131, 79.178), shoot_pos)
+                            new BezierLine(new Pose(10, 88), shoot_pos)
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                    .setLinearHeadingInterpolation(Math.toRadians(176), Math.toRadians(shoot_degree))
                     .build();
 
             Path7 = follower
@@ -519,7 +617,7 @@ public class Blue_Close_Auto extends OpMode {
                     .addPath(
                             new BezierLine(shoot_pos, new Pose(42.168, 59.439))
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                    .setLinearHeadingInterpolation(Math.toRadians(shoot_degree), Math.toRadians(180))
                     .build();
 
             Path8 = follower
@@ -533,7 +631,7 @@ public class Blue_Close_Auto extends OpMode {
             Path9 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(32.299, 59.215), new Pose(12.561, 58.991))
+                            new BezierLine(new Pose(32.299, 59.215), new Pose(10.561, 58.991))
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(180))
                     .build();
@@ -541,9 +639,9 @@ public class Blue_Close_Auto extends OpMode {
             Path10 = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(12.561, 58.991), new Pose(50.916, 126.729))
+                            new BezierLine(new Pose(10.561, 58.991), shoot_pos)
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(shoot_degree))
                     .build();
         }
         }
