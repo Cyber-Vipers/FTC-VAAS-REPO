@@ -247,42 +247,42 @@ public class Blue_Far_Auto extends OpMode {
                             //Left Right Right
                             // aka Green Purple Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             break;
                         case 22:
                             // Right Left Right
                             // aka Purple Green Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             break;
                         case 23:
                             // Right Right Left
                             // aka Purple Purple Green 😎
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             break;
                     }
@@ -334,42 +334,42 @@ public class Blue_Far_Auto extends OpMode {
                             //Left Right Right
                             // aka Green Purple Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             break;
                         case 22:
                             // Right Left Right
                             // aka Purple Green Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             break;
                         case 23:
                             // Right Right Left
                             // aka Purple Purple Green 😎
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             break;
                     }
@@ -420,42 +420,42 @@ public class Blue_Far_Auto extends OpMode {
                             //Left Right Right
                             // aka Green Purple Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             break;
                         case 22:
                             // Right Left Right
                             // aka Purple Green Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             break;
                         case 23:
                             // Right Right Left
                             // aka Purple Purple Green 😎
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             break;
                     }
@@ -499,42 +499,42 @@ public class Blue_Far_Auto extends OpMode {
                             //Left Right Right
                             // aka Green Purple Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             break;
                         case 22:
                             // Right Left Right
                             // aka Purple Green Purple
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             break;
                         case 23:
                             // Right Right Left
                             // aka Purple Purple Green 😎
                             if (last_fire_time + (fire_wait * 0.35)  <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.55) <= System.currentTimeMillis()) {
-                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchRight(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             if (last_fire_time + (fire_wait * 0.65) <= System.currentTimeMillis()) {
 
-                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE);
+                                launchLeft(true,robotComposition,Launcher.LauncherDistance.CLOSE,0);
                             }
                             break;
                     }

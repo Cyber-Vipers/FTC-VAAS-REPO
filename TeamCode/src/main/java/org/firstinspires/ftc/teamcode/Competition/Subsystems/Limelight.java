@@ -9,12 +9,13 @@ import org.firstinspires.ftc.teamcode.Competition.Robot_Composition;
 @Configurable
 public class Limelight {
     public static void aim(Robot_Composition robot) {
+        Limelight.look_up(robot);
         Limelight3A limelight = robot.limelight3A;
         LLResult result = limelight.getLatestResult();
 
         for (LLResultTypes.FiducialResult fid_res: result.getFiducialResults()) {
             if (fid_res.getFiducialId() == 20) {
-                robot.follower.turnTo(Math.toRadians(fid_res.getTargetXDegrees()));
+
             }
         }
     }

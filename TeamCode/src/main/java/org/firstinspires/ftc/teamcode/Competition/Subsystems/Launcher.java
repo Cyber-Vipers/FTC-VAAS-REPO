@@ -1,12 +1,20 @@
 package org.firstinspires.ftc.teamcode.Competition.Subsystems;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.robot.Robot;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.Competition.Robot_Composition;
 import org.firstinspires.ftc.teamcode.Competition.opmodes.Teleop.Competition_Teleop;
 
@@ -18,7 +26,7 @@ public class Launcher {
         CLOSE,
         FAR;
     }
-    public static final double FEED_TIME_SECONDS = 0.5;
+    public static double FEED_TIME_SECONDS = 1.0;
     public static double left_feeder_block = 0.25;
     public static double right_feeder_block = 0.25;
     public static double right_feeder_up = 0;
@@ -56,28 +64,28 @@ public class Launcher {
                         case 21:
                             //Impossible for perfect motif
                             if (since_stop + (wait_time * first_wait)  <= System.currentTimeMillis()) {
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * second_wait) <= System.currentTimeMillis()) {
-                                launchLeft(true,robot,launcherDistance);
+                                launchLeft(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * third_wait) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             break;
                         case 22:
                         case 23:
                             //Impossible for perfect motif
                             if (since_stop + (wait_time * first_wait)  <= System.currentTimeMillis()) {
-                                launchLeft(true,robot,launcherDistance);
+                                launchLeft(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * second_wait) <= System.currentTimeMillis()) {
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * third_wait) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             break;
                     }
@@ -87,40 +95,40 @@ public class Launcher {
                         case 21:
                             //Possible!
                             if (since_stop + (wait_time * first_wait)  <= System.currentTimeMillis()) {
-                                launchLeft(true,robot,launcherDistance);
+                                launchLeft(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * second_wait) <= System.currentTimeMillis()) {
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * third_wait) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             break;
                         case 22:
                             //possible for perfect motif
                             if (since_stop + (wait_time * first_wait)  <= System.currentTimeMillis()) {
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * second_wait) <= System.currentTimeMillis()) {
-                                launchLeft(true,robot,launcherDistance);
+                                launchLeft(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * third_wait) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             break;
                         case 23:
                             //possible for perfect motif
                             if (since_stop + (wait_time * first_wait)  <= System.currentTimeMillis()) {
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * second_wait) <= System.currentTimeMillis()) {
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * third_wait) <= System.currentTimeMillis()) {
 
-                                launchLeft(true,robot,launcherDistance);
+                                launchLeft(true,robot,launcherDistance,0);
                             }
                             break;
                     }
@@ -130,40 +138,40 @@ public class Launcher {
                         case 21:
                             //possible for perfect motif
                             if (since_stop + (wait_time * first_wait)  <= System.currentTimeMillis()) {
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * second_wait) <= System.currentTimeMillis()) {
-                                launchLeft(true,robot,launcherDistance);
+                                launchLeft(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * third_wait) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             break;
                         case 22:
                             //possible for perfect motif
                             if (since_stop + (wait_time * first_wait)  <= System.currentTimeMillis()) {
-                                launchLeft(true,robot,launcherDistance);
+                                launchLeft(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * second_wait) <= System.currentTimeMillis()) {
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * third_wait) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             break;
                         case 23:
                             //Impossible for perfect motif
                             if (since_stop + (wait_time * first_wait)  <= System.currentTimeMillis()) {
-                                launchLeft(true,robot,launcherDistance);
+                                launchLeft(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * second_wait) <= System.currentTimeMillis()) {
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             if (since_stop + (wait_time * third_wait) <= System.currentTimeMillis()) {
 
-                                launchRight(true,robot,launcherDistance);
+                                launchRight(true,robot,launcherDistance,0);
                             }
                             break;
                     }
@@ -174,18 +182,22 @@ public class Launcher {
 
     }
 
-    public static void launchRight(boolean shotRequested, Robot_Composition robot,LauncherDistance launcherDistance) {
+    public static void launchRight(boolean shotRequested, Robot_Composition robot,LauncherDistance launcherDistance,float modifier) {
+
         if (launcherDistance.equals(LauncherDistance.FAR)) {
-            launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY;
-            launcherMin = LAUNCHER_FAR_MIN_VELOCITY;
+            launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY + modifier;
+            launcherMin = LAUNCHER_FAR_MIN_VELOCITY + modifier;
         } else {
-            launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY;
-            launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
+            launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY + modifier;
+            launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY + modifier;
         }
+
         switch (rightLaunchState) {
             case IDLE:
                 if (shotRequested) {
                     rightLaunchState = LaunchState.SPIN_UP;
+                    robot.intake.setDirection(DcMotorSimple.Direction.REVERSE);
+                    robot.intake.setPower(1);
                 }
                 break;
             case SPIN_UP:
@@ -211,7 +223,8 @@ public class Launcher {
                 break;
         }
     }
-    public static void launchLeft(boolean shotRequested, Robot_Composition robot,LauncherDistance launcherDistance) {
+    public static void launchLeft(boolean shotRequested, Robot_Composition robot,LauncherDistance launcherDistance, float modifier) {
+
         if (launcherDistance.equals(LauncherDistance.FAR)) {
             launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY;
             launcherMin = LAUNCHER_FAR_MIN_VELOCITY;
@@ -219,10 +232,13 @@ public class Launcher {
             launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY;
             launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
         }
+
         switch (leftLaunchState) {
             case IDLE:
                 if (shotRequested) {
                     leftLaunchState = LaunchState.SPIN_UP;
+                    robot.intake.setDirection(DcMotorSimple.Direction.REVERSE);
+                    robot.intake.setPower(1);
                 }
                 break;
             case SPIN_UP:
@@ -249,5 +265,15 @@ public class Launcher {
                 robot.left_inside = null;
                 break;
         }
+    }
+
+    public static double get_launcher_reg(Robot_Composition composition){
+        Follower follower = composition.follower;
+        Limelight3A limelight3A = composition.limelight3A;
+        LLResult result = limelight3A.getLatestResult();
+        Pose3D current_position = result.getBotpose();
+        double distance = Math.sqrt((current_position.getPosition().x - 13) + (current_position.getPosition().y - 134));
+        return (Math.pow(-0.168269*distance,2)-(0.432692*distance)+1200) + (Math.pow(0.00862664*distance,2)-(5.6332*distance)+1200);
+
     }
 }

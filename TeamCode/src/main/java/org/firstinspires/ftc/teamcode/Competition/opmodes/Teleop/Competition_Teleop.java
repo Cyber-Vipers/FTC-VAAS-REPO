@@ -32,9 +32,13 @@ import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.configurables.annotations.IgnoreConfigurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
+import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.MathFunctions;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
@@ -43,7 +47,11 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.*;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.Competition.Robot_Composition;
 import org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher;
 import org.firstinspires.ftc.teamcode.Competition.Subsystems.Limelight;
@@ -146,7 +154,11 @@ public class Competition_Teleop extends OpMode {
     double leftFrontPower;
     double rightFrontPower;
     double leftBackPower;
+    public IMU imu;
     double rightBackPower;
+    double targetHeading = Math.toRadians(180); // Radians
+    PIDFController controller;
+    boolean headingLock = true;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -171,7 +183,7 @@ public class Competition_Teleop extends OpMode {
         colorleft = hardwareMap.get(Rev2mDistanceSensor.class, "color2");
         colorright = hardwareMap.get(Rev2mDistanceSensor.class, "color1");
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
-
+        imu = hardwareMap.get(IMU.class, "imu");
 
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
@@ -211,13 +223,13 @@ public class Competition_Teleop extends OpMode {
 
         leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
         rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
-        
+
         /*
          * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
          * both work to feed the ball into the robot.
          */
         follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
-
+        controller = new PIDFController(follower.constants.coefficientsHeadingPIDF);
         follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
         follower.update();
         robotComposition = new Robot_Composition(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, leftLauncher, rightLauncher, intake, feeder, leftFeeder, rightFeeder,colorleft,colorright,follower,telemetry,diverter,limelight_servo,limelight);
@@ -240,6 +252,9 @@ public class Competition_Teleop extends OpMode {
         /*
          * Tell the driver that initialization is complete.
          */
+        targetHeading = Math.toRadians(130); // Radians
+        PIDFController controller = new PIDFController(follower.constants.coefficientsHeadingPIDF);
+        boolean headingLock = true;
         telemetry.addData("Status", "Initialized");
         telemetry.addData("This is the TELEOP for 20525 for Config 'Silly Robot'"," This Does NOT MOVE (off the table) without input");
     }
@@ -262,6 +277,8 @@ public class Competition_Teleop extends OpMode {
     public void start() {
         leftFeeder.setPosition(left_feeder_block);
         rightFeeder.setPosition(right_feeder_block);
+        limelight.setPollRateHz(100);
+        limelight.start();
         follower.startTeleopDrive();
     }
 
@@ -282,6 +299,8 @@ public class Competition_Teleop extends OpMode {
     static TelemetryManager telemetryM;
     public ElapsedTime looptime = new ElapsedTime();
     public boolean can_distance = false;
+    public long last_heading_swap = 0;
+    public static long heading_cooldown = 0;
 
     @Override
     public void loop() {
@@ -291,7 +310,10 @@ public class Competition_Teleop extends OpMode {
         double distance_right = colorright.getDistance(DistanceUnit.CM);
         handle_divert(robotComposition,distance_left,distance_right);
 
-
+        if (gamepad2.b && System.currentTimeMillis() >= last_heading_swap+ heading_cooldown ) {
+            headingLock = !headingLock;
+            last_heading_swap = System.currentTimeMillis();
+        }
         if (gamepad1.right_bumper) {
             if (last_dis_change +dist_wait <= System.currentTimeMillis()) {
                 if (launcherDistance == Launcher.LauncherDistance.FAR) {
@@ -372,14 +394,37 @@ public class Competition_Teleop extends OpMode {
          * Now we call our "Launch" function.
          */
 
-            launchLeft(gamepad1.dpadLeftWasPressed(),robotComposition,launcherDistance);
-            launchRight(gamepad1.dpadRightWasPressed(),robotComposition,launcherDistance);
-
+        launchLeft(gamepad1.dpadLeftWasPressed(),robotComposition,launcherDistance,0);
+        launchRight(gamepad1.dpadRightWasPressed(),robotComposition,launcherDistance,0);
+        if (gamepad1.dpad_up) {
+            launchRight(true,robotComposition,launcherDistance,0);
+            launchLeft(true,robotComposition,launcherDistance,0);
+        }
 
 
         /*
          * Show the state and motor powers
          */
+        // First, tell Limelight which way your robot is facing
+        LLResult result = limelight.getLatestResult();
+
+        double robotYaw = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.XYX, AngleUnit.RADIANS).firstAngle;
+        limelight.updateRobotOrientation(robotYaw);
+        telemetry.addData("Is Result Valid", result.isValid());
+        for (LLResultTypes.FiducialResult fiducialResult : limelight.getLatestResult().getFiducialResults()) {
+            Pose3D poser = fiducialResult.getRobotPoseFieldSpace();
+            telemetry.addData("X", poser.getPosition().x);
+            telemetry.addData("Y",poser.getPosition().y);
+        }
+        telemetry.addData("Pipeline",limelight.getLatestResult().getPipelineIndex());
+        if (result != null && result.isValid()) {
+            Pose3D botpose_mt2 = result.getBotpose_MT2();
+            if (botpose_mt2 != null) {
+                double x = botpose_mt2.getPosition().x;
+                double y = botpose_mt2.getPosition().y;
+                telemetry.addData("MT2 Location:", "(" + x + ", " + y + ")");
+            }
+        }
         telemetry.addData("State", leftLaunchState);
         telemetry.addData("launch distance", launcherDistance);
         telemetry.addData("Left Launcher Velocity", leftLauncher.getVelocity());
@@ -395,28 +440,27 @@ public class Competition_Teleop extends OpMode {
     public void stop() {
     }
     public static double turn_multipler = 0.8;
-    void mecanumDrive(double forward, double strafe, double rotate){
 
-        if (!automatedDrive) {
-            //Make the last parameter false for field-centric
-            //In case the drivers want to use a "slowMode" you can scale the vectors
-
-            //This is the normal version to use in the TeleOp
-            if (!slowMode) follower.setTeleOpDrive(
-                    -gamepad1.left_stick_y,
-                    -gamepad1.left_stick_x,
-                    -gamepad1.right_stick_x * turn_multipler,
-                    true // Robot Centric
-            );
-
-                //This is how it looks with slowMode on
-            else follower.setTeleOpDrive(
-                    -gamepad1.left_stick_y * slowModeMultiplier,
-                    -gamepad1.left_stick_x * slowModeMultiplier ,
-                    -gamepad1.right_stick_x * slowModeMultiplier * turn_multipler,
-                    true // Robot Centric
-            );
+    public double getHeadingError() {
+        if (follower.getCurrentPath() == null) {
+            return 0;
         }
+
+        double headingError = MathFunctions.getTurnDirection(follower.getPose().getHeading(), targetHeading) * MathFunctions.getSmallestAngleDifference(follower.getPose().getHeading(), targetHeading);
+        return headingError;
+    }
+
+    void mecanumDrive(double forward, double strafe, double rotate) {
+        controller.setCoefficients(follower.constants.getCoefficientsHeadingPIDF());
+        controller.updateError(getHeadingError());
+        telemetry.addData("Heading Error", controller.getError());
+        if (headingLock) {
+            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, controller.run());
+            telemetry.addData("Locking Heading", controller.getTargetPosition());
+        }else{
+            telemetry.addData("Not locking heading", -gamepad1.right_stick_x);
+        follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x);
+    }
 
         //Automated PathFollowing
 
