@@ -22,8 +22,8 @@ public class Sphere_Operator {
     public static ArrayList<Float> right_distance_seen = new ArrayList<>();
     public static ArrayList<Float> left_distance_seen = new ArrayList<>();
 
-    final static double LEFT_POSITION = 0.2962; //the left and right position for the diverter servo
-    final static double RIGHT_POSITION = 0;
+    public static double LEFT_POSITION = 0.5962; //the left and right position for the diverter servo
+    public static double RIGHT_POSITION = 0;
     public static void handle_divert(Robot_Composition robot,double left_sensed_distance, double right_sensed_distance) {
         robot.telemetry.addData("Left Distance", Math.round(left_sensed_distance));
         robot.telemetry.addData("Right Distance", Math.round(right_sensed_distance));

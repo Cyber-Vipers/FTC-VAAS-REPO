@@ -28,9 +28,9 @@ public class Launcher {
     }
     public static double FEED_TIME_SECONDS = 1.0;
     public static double left_feeder_block = 0.25;
-    public static double right_feeder_block = 0.25;
+    public static double right_feeder_block = 0.5;
     public static double right_feeder_up = 0;
-    public static double left_feeder_up = 1;
+    public static double left_feeder_up = 0.5;
     public static final double LAUNCHER_FAR_TARGET_VELOCITY = 1350; //Target velocity for far goal
     public static final double LAUNCHER_FAR_MIN_VELOCITY = 1325; //minimum required to start a shot for far goal.
     public static final double LAUNCHER_CLOSE_TARGET_VELOCITY = 1200; //in ticks/second for the close goal.
@@ -182,6 +182,29 @@ public class Launcher {
 
     }
 
+
+
+    public static void shut_gates(Robot_Composition robot) {
+        robot.leftFeeder.setPosition(left_feeder_block);
+        robot.rightFeeder.setPosition(right_feeder_block);
+    }
+
+    public static void spinup(Robot_Composition robot, LauncherDistance launcherDistance, int modifier) {
+        if (launcherDistance.equals(LauncherDistance.FAR)) {
+            launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY + modifier;
+            launcherMin = LAUNCHER_FAR_MIN_VELOCITY + modifier;
+        } else {
+            launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY + modifier;
+            launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY + modifier;
+        }
+        robot.leftLauncher.setVelocity(launcherTarget);
+        robot.rightLauncher.setVelocity(launcherTarget);
+    }
+
+    public static void spam(Robot_Composition robot, LauncherDistance launcherDistance,int modifier) {
+        launchLeft(true,robot,launcherDistance,modifier);
+        launchRight(true,robot,launcherDistance,modifier);
+    }
     public static void launchRight(boolean shotRequested, Robot_Composition robot,LauncherDistance launcherDistance,float modifier) {
 
         if (launcherDistance.equals(LauncherDistance.FAR)) {
@@ -251,7 +274,6 @@ public class Launcher {
             case LAUNCH:
                 robot.leftFeeder.setPosition(left_feeder_up);
                 robot.feeder.setPower(1);
-                aim(robot);
                 leftFeederTimer.reset();
                 leftLaunchState = LaunchState.LAUNCHING;
                 break;

@@ -73,7 +73,7 @@ import java.util.function.Supplier;
 //@Disabled
 public class Competition_Teleop extends OpMode {
     public static double left_feeder_block = 0.25;
-    public static double right_feeder_block = 0.25;
+    public static double right_feeder_block = 0;
     public static double right_feeder_up = 0;
     public static double left_feeder_up = 1;
     final double FEED_TIME_SECONDS = 1; //The feeder servos run this long when a shot is requested
@@ -91,8 +91,8 @@ public class Competition_Teleop extends OpMode {
     double launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY; //These variables allow
     double launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
 
-    final double LEFT_POSITION = 0.2962; //the left and right position for the diverter servo
-    final double RIGHT_POSITION = 0;
+    public static double LEFT_POSITION = 0.2962; //the left and right position for the diverter servo
+    public static double RIGHT_POSITION = 0;
 
     // Declare OpMode members.
     private DcMotor leftFrontDrive = null;
@@ -158,7 +158,7 @@ public class Competition_Teleop extends OpMode {
     double rightBackPower;
     double targetHeading = Math.toRadians(180); // Radians
     PIDFController controller;
-    boolean headingLock = true;
+    boolean headingLock = false;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -199,7 +199,6 @@ public class Competition_Teleop extends OpMode {
 
         leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        intake.setDirection(DcMotorSimple.Direction.REVERSE);
 
         leftLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -248,6 +247,7 @@ public class Competition_Teleop extends OpMode {
                 )
         );
         robotComposition.left_inside = left_inside;
+        diverter.setDirection(Servo.Direction.REVERSE);
         robotComposition.right_inside = right_inside;
         /*
          * Tell the driver that initialization is complete.
@@ -265,7 +265,7 @@ public class Competition_Teleop extends OpMode {
     @Override
     public void init_loop() {
         telemetry.addData("Distance", colorleft.getDistance(DistanceUnit.CM));
-        Limelight.all_knowing_horse(robotComposition);
+
 
 
     }
@@ -304,16 +304,37 @@ public class Competition_Teleop extends OpMode {
 
     @Override
     public void loop() {
+        telemetry.addData("DIVERTER POSITION", diverter.getPosition());
         follower.update();
         looptime.startTime();
         double distance_left = colorleft.getDistance(DistanceUnit.CM);
         double distance_right = colorright.getDistance(DistanceUnit.CM);
         handle_divert(robotComposition,distance_left,distance_right);
+//        if (gamepad2.start) {
+//            headingLock = false;
+//        }
+//        if (gamepad2.b && System.currentTimeMillis() >= last_heading_swap + heading_cooldown ) {
+//            headingLock = true;
+//            targetHeading = Math.toRadians(40);
+//            last_heading_swap = System.currentTimeMillis();
+//        }
+//        if (gamepad2.x && System.currentTimeMillis() >= last_heading_swap + heading_cooldown) {
+//            headingLock = true;
+//            targetHeading = Math.toRadians(135);
+//            last_heading_swap = System.currentTimeMillis();
+//        }
+//        if (gamepad2.y && System.currentTimeMillis() >= last_heading_swap + heading_cooldown) {
+//            headingLock = true;
+//            targetHeading = 110;
+//            last_heading_swap = System.currentTimeMillis();
+//        }
+//        if (gamepad2.a) {
+//            headingLock = true;
+//            targetHeading = Math.toRadians(69);
+//            last_heading_swap = System.currentTimeMillis();
+//        }
 
-        if (gamepad2.b && System.currentTimeMillis() >= last_heading_swap+ heading_cooldown ) {
-            headingLock = !headingLock;
-            last_heading_swap = System.currentTimeMillis();
-        }
+
         if (gamepad1.right_bumper) {
             if (last_dis_change +dist_wait <= System.currentTimeMillis()) {
                 if (launcherDistance == Launcher.LauncherDistance.FAR) {
@@ -442,9 +463,7 @@ public class Competition_Teleop extends OpMode {
     public static double turn_multipler = 0.8;
 
     public double getHeadingError() {
-        if (follower.getCurrentPath() == null) {
-            return 0;
-        }
+
 
         double headingError = MathFunctions.getTurnDirection(follower.getPose().getHeading(), targetHeading) * MathFunctions.getSmallestAngleDifference(follower.getPose().getHeading(), targetHeading);
         return headingError;
@@ -455,7 +474,7 @@ public class Competition_Teleop extends OpMode {
         controller.updateError(getHeadingError());
         telemetry.addData("Heading Error", controller.getError());
         if (headingLock) {
-            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, controller.run());
+            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, controller.run() + -gamepad1.right_stick_x);
             telemetry.addData("Locking Heading", controller.getTargetPosition());
         }else{
             telemetry.addData("Not locking heading", -gamepad1.right_stick_x);
