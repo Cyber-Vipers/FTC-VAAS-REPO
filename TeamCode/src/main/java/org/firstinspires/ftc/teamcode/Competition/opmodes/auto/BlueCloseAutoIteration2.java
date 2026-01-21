@@ -2,6 +2,8 @@
 package org.firstinspires.ftc.teamcode.Competition.opmodes.auto;
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
+import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Sphere_Operator.handle_divert;
+
 import com.bylazar.field.FieldManager;
 import com.bylazar.field.PanelsField;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -24,9 +26,9 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Competition.Robot_Composition;
 import org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher;
-import org.firstinspires.ftc.teamcode.pedroPathing.Tuning;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
 //todo fix heading
@@ -98,6 +100,7 @@ public class BlueCloseAutoIteration2 extends OpMode {
         color1 = hardwareMap.get(Rev2mDistanceSensor.class,"color2");
         color2 = hardwareMap.get(Rev2mDistanceSensor.class, "color1");
         limelight = hardwareMap.get(Limelight3A.class,"limelight");
+
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
          * because the axles point in opposite directions. Pushing the left stick forward
@@ -161,7 +164,9 @@ public class BlueCloseAutoIteration2 extends OpMode {
         panelsField.update();
         move();
         prevent_false_shots();
-        draw();
+        double distance_left = color1.getDistance(DistanceUnit.CM);
+        double distance_right = color2.getDistance(DistanceUnit.CM);
+        handle_divert(robotComposition,distance_right,distance_left);
         paths = new Paths(follower);
         // Log values to Panels and Driver Station
         telemetry.addData("Current Path", current_state.name());
@@ -173,10 +178,8 @@ public class BlueCloseAutoIteration2 extends OpMode {
         panelsTelemetry.update(telemetry);
 
     }
-    public void draw() {
-        Drawing.drawDebug(follower);
-    }
-    public static long fire_wait_time = 3500;
+
+    public static long fire_wait_time = 5000;
     public ElapsedTime shoot_timer = new ElapsedTime();
     public void prevent_false_shots() {
         if (current_state != States.Shoot && current_state != States.Shoot2 && current_state != States.Shoot3) {
@@ -184,6 +187,7 @@ public class BlueCloseAutoIteration2 extends OpMode {
         }
     }
 
+    public ElapsedTime initial_wait = new ElapsedTime();
     public void move() {
         switch (current_state) {
             case Initial:
@@ -194,13 +198,14 @@ public class BlueCloseAutoIteration2 extends OpMode {
                     Launcher.spinup(robotComposition, Launcher.LauncherDistance.CLOSE, 0);
                     shoot_timer.reset();
                     shoot_timer.startTime();
+                    initial_wait.startTime();
                 }
 
                 break;
             case Shoot:
                 follower.setMaxPower(1);
                 if (follower.atParametricEnd()) {
-                    if (shoot_timer.milliseconds() > fire_wait_time) {
+                    if (shoot_timer.milliseconds() > fire_wait_time + 200) {
                         follower.followPath(paths.PrepareIntake);
                         current_state = States.PrepareIntake;
                     } else {
@@ -212,13 +217,14 @@ public class BlueCloseAutoIteration2 extends OpMode {
 
                 if (follower.atParametricEnd()) {
                     follower.followPath(paths.Shoot);
-                    current_state = States.Initial;
+                    current_state = States.ApproachIntake1;
 //                    follower.followPath(paths.ApproachIntake1);
 //                    current_state = States.ApproachIntake1;
                 }
                 break;
             case ApproachIntake1:
-                follower.setMaxPower(0.4);
+                follower.setMaxPower(0.3);
+
                 if (follower.atParametricEnd()) {
                     intake.setPower(1);
                     follower.followPath(paths.Intake1);
@@ -255,7 +261,7 @@ public class BlueCloseAutoIteration2 extends OpMode {
                 }
                 break;
             case ApproachIntake2:
-                follower.setMaxPower(0.6);
+                follower.setMaxPower(0.3);
                 if (follower.atParametricEnd()) {
                     follower.followPath(paths.Intake2);
                     current_state = States.Intake2;
@@ -275,7 +281,7 @@ public class BlueCloseAutoIteration2 extends OpMode {
                 if (follower.atParametricEnd()) {
                     if (shoot_timer.milliseconds() > fire_wait_time) {
                         follower.followPath(paths.Leave);
-                        current_state = States.Leave;
+                        current_state = States.Shoot3;
                     } else {
                         Launcher.spam(robotComposition, Launcher.LauncherDistance.CLOSE, 0);
                     }

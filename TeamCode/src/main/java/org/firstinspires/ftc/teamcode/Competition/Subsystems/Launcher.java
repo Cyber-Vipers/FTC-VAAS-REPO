@@ -201,9 +201,14 @@ public class Launcher {
         robot.rightLauncher.setVelocity(launcherTarget);
     }
 
+    public static ElapsedTime spam_timer = new ElapsedTime();
+    public static long wait_time = 250;
+
     public static void spam(Robot_Composition robot, LauncherDistance launcherDistance,int modifier) {
-        launchLeft(true,robot,launcherDistance,modifier);
-        launchRight(true,robot,launcherDistance,modifier);
+        launchRight(true,robot,launcherDistance,modifier + 100);
+            launchLeft(true,robot,launcherDistance,modifier);
+
+
     }
     public static void launchRight(boolean shotRequested, Robot_Composition robot,LauncherDistance launcherDistance,float modifier) {
 

@@ -26,7 +26,6 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.Competition.Robot_Composition;
 import org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher;
-import org.firstinspires.ftc.teamcode.pedroPathing.Tuning;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
 
@@ -161,7 +160,7 @@ public class RedCloseAutoIteration2 extends OpMode {
         panelsField.update();
         move();
         prevent_false_shots();
-        draw();
+
         // Log values to Panels and Driver Station
         telemetry.addData("Current Path", current_state.name());
         panelsTelemetry.debug("Current Path", current_state.name());
@@ -172,9 +171,7 @@ public class RedCloseAutoIteration2 extends OpMode {
         panelsTelemetry.update(telemetry);
 
     }
-    public void draw() {
-        Drawing.drawDebug(follower);
-    }
+
     public static long fire_wait_time = 2500;
     public ElapsedTime shoot_timer = new ElapsedTime();
     public ElapsedTime pizza_time = new ElapsedTime();

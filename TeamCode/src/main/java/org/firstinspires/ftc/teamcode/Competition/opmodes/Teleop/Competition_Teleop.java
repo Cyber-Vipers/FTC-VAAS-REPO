@@ -27,9 +27,12 @@ import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.launchLeft;
 import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.launchRight;
 import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Sphere_Operator.handle_divert;
+import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Sphere_Operator.right_distance;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.configurables.annotations.IgnoreConfigurable;
+import com.bylazar.field.FieldManager;
+import com.bylazar.field.PanelsField;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.control.PIDFController;
@@ -41,7 +44,6 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
-import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.*;
@@ -56,12 +58,9 @@ import org.firstinspires.ftc.teamcode.Competition.Robot_Composition;
 import org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher;
 import org.firstinspires.ftc.teamcode.Competition.Subsystems.Limelight;
 import org.firstinspires.ftc.teamcode.Competition.Subsystems.Sphere_Operator;
-import org.firstinspires.ftc.teamcode.Runt.opmodes.DecodeRi3D;
-import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
-import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntVisualConstants;
 
-import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
+import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
+
 import java.util.function.Supplier;
 
 /*
@@ -125,6 +124,7 @@ public class Competition_Teleop extends OpMode {
     private LaunchState rightLaunchState;
     public long last_divert_time = 0;
     public long divert_cooldown = 1000;
+    public boolean limelight_detection_enabled = false;
 
 
     private enum DiverterDirection {
@@ -148,7 +148,7 @@ public class Competition_Teleop extends OpMode {
     private Launcher.LauncherDistance launcherDistance = Launcher.LauncherDistance.CLOSE;
     public Servo limelight_servo;
     public Limelight3A limelight;
-
+    private TelemetryManager panelsTelemetry; // Panels Telemetry instance
 
     // Setup a variable for each drive wheel to save power level for telemetry
     double leftFrontPower;
@@ -257,6 +257,7 @@ public class Competition_Teleop extends OpMode {
         boolean headingLock = true;
         telemetry.addData("Status", "Initialized");
         telemetry.addData("This is the TELEOP for 20525 for Config 'Silly Robot'"," This Does NOT MOVE (off the table) without input");
+        panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
     }
 
     /*
@@ -302,14 +303,60 @@ public class Competition_Teleop extends OpMode {
     public long last_heading_swap = 0;
     public static long heading_cooldown = 0;
 
+    private static final FieldManager panelsField = PanelsField.INSTANCE.getField();
+    public static boolean is_configuring = false;
+
     @Override
     public void loop() {
+        looptime.startTime();
         telemetry.addData("DIVERTER POSITION", diverter.getPosition());
         follower.update();
-        looptime.startTime();
+
+
+
+        panelsField.moveCursor(follower.getPose().getX(), follower.getPose().getY());
+        panelsField.update();
+        panelsTelemetry.debug("X", follower.getPose().getX());
+        panelsTelemetry.debug("Y", follower.getPose().getY());
+        panelsTelemetry.debug("Heading", follower.getPose().getHeading());
+        telemetry.update();
+        panelsTelemetry.update(telemetry);
         double distance_left = colorleft.getDistance(DistanceUnit.CM);
         double distance_right = colorright.getDistance(DistanceUnit.CM);
-        handle_divert(robotComposition,distance_left,distance_right);
+        handle_divert(robotComposition,distance_right,distance_left);
+
+//        if (gamepad2.startWasPressed()) {
+//            is_configuring = true;
+//        }
+//        if (gamepad2.shareWasPressed()) {
+//            is_configuring = false;
+//        }
+//        if (is_configuring) {
+//            telemetry.addLine("CURRENTLY CONFIGURING!");
+//            if (gamepad2.aWasPressed()) {
+//                if (diverter.getDirection() == Servo.Direction.FORWARD) {
+//                    diverter.setDirection(Servo.Direction.REVERSE);
+//                } else {
+//                    diverter.setDirection(Servo.Direction.FORWARD);
+//                }
+//            }
+//            if (gamepad2.bWasPressed()) {
+//                if (LEFT_POSITION == 0.2962) {
+//                    LEFT_POSITION = 1;
+//                } else {
+//                    LEFT_POSITION = 0.2962;
+//                }
+//            }
+//            if (gamepad2.xWasPressed()) {
+//                if (RIGHT_POSITION == 0) {
+//                    RIGHT_POSITION = 1;
+//                } else {
+//                    RIGHT_POSITION = 0;
+//                }
+//            }
+//        } else {
+//            handle_divert(robotComposition,distance_left,distance_right);
+//        }
 //        if (gamepad2.start) {
 //            headingLock = false;
 //        }
@@ -349,7 +396,7 @@ public class Competition_Teleop extends OpMode {
                 last_dis_change = System.currentTimeMillis();
             }
         }
-        mecanumDrive(-gamepad1.left_stick_y - (gamepad1.right_trigger / slow_multiplier), gamepad1.left_stick_x - (gamepad1.right_trigger / slow_multiplier), gamepad1.right_stick_x - (gamepad1.right_trigger / slow_multiplier));
+        mecanumDrive();
         if (gamepad1.right_trigger >= 0.1) {
             slowMode = true;
         } else {
@@ -418,32 +465,33 @@ public class Competition_Teleop extends OpMode {
         launchLeft(gamepad1.dpadLeftWasPressed(),robotComposition,launcherDistance,0);
         launchRight(gamepad1.dpadRightWasPressed(),robotComposition,launcherDistance,0);
         if (gamepad1.dpad_up) {
-            launchRight(true,robotComposition,launcherDistance,0);
-            launchLeft(true,robotComposition,launcherDistance,0);
+            Launcher.spam(robotComposition,launcherDistance,0);
         }
 
 
         /*
          * Show the state and motor powers
          */
-        // First, tell Limelight which way your robot is facing
-        LLResult result = limelight.getLatestResult();
+        if (limelight_detection_enabled) {
+            // First, tell Limelight which way your robot is facing
+            LLResult result = limelight.getLatestResult();
 
-        double robotYaw = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.XYX, AngleUnit.RADIANS).firstAngle;
-        limelight.updateRobotOrientation(robotYaw);
-        telemetry.addData("Is Result Valid", result.isValid());
-        for (LLResultTypes.FiducialResult fiducialResult : limelight.getLatestResult().getFiducialResults()) {
-            Pose3D poser = fiducialResult.getRobotPoseFieldSpace();
-            telemetry.addData("X", poser.getPosition().x);
-            telemetry.addData("Y",poser.getPosition().y);
-        }
-        telemetry.addData("Pipeline",limelight.getLatestResult().getPipelineIndex());
-        if (result != null && result.isValid()) {
-            Pose3D botpose_mt2 = result.getBotpose_MT2();
-            if (botpose_mt2 != null) {
-                double x = botpose_mt2.getPosition().x;
-                double y = botpose_mt2.getPosition().y;
-                telemetry.addData("MT2 Location:", "(" + x + ", " + y + ")");
+            double robotYaw = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.XYX, AngleUnit.RADIANS).firstAngle;
+            limelight.updateRobotOrientation(robotYaw);
+            telemetry.addData("Is Result Valid", result.isValid());
+            for (LLResultTypes.FiducialResult fiducialResult : limelight.getLatestResult().getFiducialResults()) {
+                Pose3D poser = fiducialResult.getRobotPoseFieldSpace();
+                telemetry.addData("X", poser.getPosition().x);
+                telemetry.addData("Y", poser.getPosition().y);
+            }
+            telemetry.addData("Pipeline", limelight.getLatestResult().getPipelineIndex());
+            if (result != null && result.isValid()) {
+                Pose3D botpose_mt2 = result.getBotpose_MT2();
+                if (botpose_mt2 != null) {
+                    double x = botpose_mt2.getPosition().x;
+                    double y = botpose_mt2.getPosition().y;
+                    telemetry.addData("MT2 Location:", "(" + x + ", " + y + ")");
+                }
             }
         }
         telemetry.addData("State", leftLaunchState);
@@ -469,7 +517,7 @@ public class Competition_Teleop extends OpMode {
         return headingError;
     }
 
-    void mecanumDrive(double forward, double strafe, double rotate) {
+    void mecanumDrive() {
         controller.setCoefficients(follower.constants.getCoefficientsHeadingPIDF());
         controller.updateError(getHeadingError());
         telemetry.addData("Heading Error", controller.getError());

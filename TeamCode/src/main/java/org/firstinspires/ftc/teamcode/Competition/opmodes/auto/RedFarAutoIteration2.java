@@ -10,6 +10,7 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.*;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -19,6 +20,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsC
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
+@Autonomous(name = "Red Far Auto", group = "Autonomous")
 public class RedFarAutoIteration2 extends OpMode {
     public static double shoot_degree = Math.toRadians(147);
     public static double intake_degree = Math.toRadians(186);
@@ -142,7 +144,7 @@ public class RedFarAutoIteration2 extends OpMode {
         panelsField.update();
         move();
         prevent_false_shots();
-        draw();
+
         // Log values to Panels and Driver Station
         telemetry.addData("Current Path", current_state.name());
         panelsTelemetry.debug("Current Path", current_state.name());
@@ -153,9 +155,7 @@ public class RedFarAutoIteration2 extends OpMode {
         panelsTelemetry.update(telemetry);
 
     }
-    public void draw() {
-        Drawing.drawDebug(follower);
-    }
+
     public static long fire_wait_time = 2500;
     public ElapsedTime shoot_timer = new ElapsedTime();
     public void prevent_false_shots() {
