@@ -32,7 +32,7 @@ import org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
 //todo fix heading
-@Autonomous(name = "Blue Close Auto Iteration 2", group = "Autonomous")
+@Autonomous(name = "Blue Close Auto", group = "Autonomous")
 @Configurable // Panels
 public class BlueCloseAutoIteration2 extends OpMode {
     public static double shoot_degree = 147;
@@ -205,7 +205,7 @@ public class BlueCloseAutoIteration2 extends OpMode {
             case Shoot:
                 follower.setMaxPower(1);
                 if (follower.atParametricEnd()) {
-                    if (shoot_timer.milliseconds() > fire_wait_time + 200) {
+                    if (shoot_timer.milliseconds() > fire_wait_time + 2000) {
                         follower.followPath(paths.PrepareIntake);
                         current_state = States.PrepareIntake;
                     } else {

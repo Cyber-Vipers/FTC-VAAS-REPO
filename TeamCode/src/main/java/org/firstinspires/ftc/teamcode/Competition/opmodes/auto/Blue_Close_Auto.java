@@ -45,7 +45,6 @@ import java.util.ArrayList;
 
 
 @Configurable
-@Autonomous(name = "Blue Close Auto")
 public class Blue_Close_Auto extends OpMode {
     //**PRELOAD MUST BE PURPLE ON RIGHT ONE GREEN ON LEFT**
     //TODO Fix Shooting, Finish Bottom parts of functionality, as listed with other TODOS

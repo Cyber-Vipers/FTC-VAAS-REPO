@@ -27,9 +27,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsC
 
 @Autonomous(name = "Blue Far Auto", group = "Autonomous")
 public class BlueFarAutoIteration2 extends OpMode {
-    public static double shoot_degree = Math.toRadians(147);
-    public static double intake_degree = Math.toRadians(186);
-    public static Pose shoot_pos = new Pose(57.42056074766355,106.54205607476636,Math.toRadians(shoot_degree));
+
 
 
 
@@ -140,15 +138,21 @@ public class BlueFarAutoIteration2 extends OpMode {
         robotComposition = new Robot_Composition(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, leftLauncher, rightLauncher, intake, feeder, leftFeeder, rightFeeder,color1,color2,follower,telemetry,diverter,limelight_servo,limelight);
     }
 
+
     @Override
     public void loop() {
         follower.update(); // Update Pedro Pathing
         panelsField.update();
         move();
         prevent_false_shots();
-
+        Launcher.spinup(robotComposition, Launcher.LauncherDistance.FAR,200);
         // Log values to Panels and Driver Station
+        telemetry.addData("Current Shoot Time", shoot_timer.milliseconds());
+        telemetry.addData("Shoot Condition", shoot_timer.milliseconds() > fire_wait_time);
         telemetry.addData("Current Path", current_state.name());
+        telemetry.addData("LEFT FLYWHEEL VELOCITY", leftLauncher.getVelocity());
+        telemetry.addData("RIGHT FLYWHEEL VELOCITY", rightLauncher.getVelocity());
+
         panelsTelemetry.debug("Current Path", current_state.name());
         panelsTelemetry.debug("X", follower.getPose().getX());
         panelsTelemetry.debug("Y", follower.getPose().getY());
@@ -158,7 +162,7 @@ public class BlueFarAutoIteration2 extends OpMode {
 
     }
 
-    public static long fire_wait_time = 2500;
+    public static long fire_wait_time = 4500;
     public ElapsedTime shoot_timer = new ElapsedTime();
     public void prevent_false_shots() {
         if (current_state != States.Shoot && current_state != States.Shoot2) {
@@ -179,20 +183,21 @@ public class BlueFarAutoIteration2 extends OpMode {
                 break;
             case Shoot:
                 if (follower.atParametricEnd()) {
-                    if (shoot_timer.milliseconds() > fire_wait_time) {
+                    robotComposition.feeder.setPower(1);
+                    if (shoot_timer.milliseconds() > fire_wait_time + 2000) {
                         follower.followPath(paths.Pickup1);
                         current_state = States.Pickup1;
                     } else {
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.90) {
                             Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
                         }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.70) {
+                        if (shoot_timer.milliseconds() > fire_wait_time * 0.80) {
                             Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
                         }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.60) {
+                        if (shoot_timer.milliseconds() > fire_wait_time * 0.70) {
                             Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
                         }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.10) {
+                        if (shoot_timer.milliseconds() > fire_wait_time * 0.60) {
                             Launcher.spam(robotComposition, Launcher.LauncherDistance.FAR, 0);
                         }
                     }
@@ -200,9 +205,17 @@ public class BlueFarAutoIteration2 extends OpMode {
                 break;
             case Backpick2:
                 if (follower.atParametricEnd()) {
-
+                    follower.followPath(paths.Pickup3);
+                    current_state = States.Pickup3;
+                    shoot_timer.reset();
+                    shoot_timer.startTime();
                 }
                 break;
+            case Pickup3:
+                if (follower.atParametricEnd()) {
+                    follower.followPath(paths.Shoot2);
+                    current_state = States.Shoot2;
+                }
             case Backpick:
                 if(follower.atParametricEnd()){
                     follower.followPath(paths.Pickup2);
@@ -220,13 +233,14 @@ public class BlueFarAutoIteration2 extends OpMode {
                 }
             case Pickup2:
                 if (follower.atParametricEnd()) {
-                    follower.followPath(paths.Shoot2);
-                    current_state = States.Shoot2;
+                    follower.followPath(paths.Backpick2);
+                    current_state = States.Backpick2;
                     shoot_timer.reset();
                     shoot_timer.startTime();
                 }
             case Shoot2:
                 if(follower.atParametricEnd()){
+                    robotComposition.feeder.setPower(1);
                     if(shoot_timer.milliseconds() > fire_wait_time) {
                         break;
                     } else{
@@ -265,7 +279,7 @@ public class BlueFarAutoIteration2 extends OpMode {
 
                                     new Pose(50.607, 17.383)
                             )
-                    ).setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(125))
+                    ).setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(110))
 
                     .build();
 
@@ -275,7 +289,7 @@ public class BlueFarAutoIteration2 extends OpMode {
 
                                     new Pose(5.551, 9.720)
                             )
-                    ).setLinearHeadingInterpolation(Math.toRadians(125), Math.toRadians(180))
+                    ).setLinearHeadingInterpolation(Math.toRadians(110), Math.toRadians(180))
 
                     .build();
 
@@ -324,7 +338,7 @@ public class BlueFarAutoIteration2 extends OpMode {
 
                                     new Pose(50.159, 17.421)
                             )
-                    ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(125))
+                    ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(110))
 
                     .build();
         }

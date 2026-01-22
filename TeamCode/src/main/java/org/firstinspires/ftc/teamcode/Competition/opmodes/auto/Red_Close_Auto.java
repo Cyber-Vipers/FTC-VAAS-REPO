@@ -28,7 +28,6 @@ import static org.firstinspires.ftc.teamcode.Competition.Subsystems.Launcher.lau
 import java.util.ArrayList;
 
 
-@Autonomous(name = "Red Close Auto")
 public class Red_Close_Auto extends OpMode {
     //**PRELOAD MUST BE PURPLE ON RIGHT ONE GREEN ON LEFT**
     //TODO Fix Shooting, Finish Bottom parts of functionality, as listed with other TODOS

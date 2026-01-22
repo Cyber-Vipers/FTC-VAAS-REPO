@@ -154,6 +154,7 @@ public class Competition_Teleop extends OpMode {
     double leftFrontPower;
     double rightFrontPower;
     double leftBackPower;
+    public boolean manual_override_diverter = false;
     public IMU imu;
     double rightBackPower;
     double targetHeading = Math.toRadians(180); // Radians
@@ -276,8 +277,7 @@ public class Competition_Teleop extends OpMode {
      */
     @Override
     public void start() {
-        leftFeeder.setPosition(left_feeder_block);
-        rightFeeder.setPosition(right_feeder_block);
+        Launcher.shut_gates(robotComposition);
         limelight.setPollRateHz(100);
         limelight.start();
         follower.startTeleopDrive();
@@ -323,8 +323,16 @@ public class Competition_Teleop extends OpMode {
         panelsTelemetry.update(telemetry);
         double distance_left = colorleft.getDistance(DistanceUnit.CM);
         double distance_right = colorright.getDistance(DistanceUnit.CM);
-        handle_divert(robotComposition,distance_right,distance_left);
 
+        if (!manual_override_diverter) {
+            handle_divert(robotComposition,distance_right,distance_left);
+        }
+        if (gamepad2.a) {
+            manual_override_diverter = true;
+        }
+        if (gamepad2.b) {
+            manual_override_diverter = false;
+        }
 //        if (gamepad2.startWasPressed()) {
 //            is_configuring = true;
 //        }
