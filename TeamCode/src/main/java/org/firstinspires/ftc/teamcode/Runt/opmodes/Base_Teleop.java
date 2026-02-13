@@ -19,7 +19,6 @@ import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsC
 import java.util.function.Supplier;
 
 @Configurable
-@TeleOp(name = "Base Teleop")
 public class Base_Teleop extends OpMode {
     private Follower follower;
     public static Pose startingPose; //See ExampleAuto to understand how to use this

@@ -20,7 +20,7 @@ public class RuntOdometryWheelsConstants {
             .mass(9.52544)
             .forwardZeroPowerAcceleration(-1987.529256386748)
             .lateralZeroPowerAcceleration(-88.53049322546104)
-
+            .automaticHoldEnd(true)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.30, 0, 0.03, 0.03))
             .headingPIDFCoefficients(new PIDFCoefficients(1, 0, 0.02, 0.01))
             .lateralZeroPowerAcceleration(-67.60657954116293);
@@ -43,7 +43,6 @@ public class RuntOdometryWheelsConstants {
             .strafePodX(-0.25)
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
-
             .encoderResolution(
                     GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD
             )

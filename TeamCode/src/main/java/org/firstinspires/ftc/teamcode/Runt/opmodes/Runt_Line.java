@@ -7,12 +7,14 @@ import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.Path;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
 @TeleOp(name="Runt Line")
+@Disabled
 public class Runt_Line extends OpMode {
     public static double DISTANCE = 40;
     private boolean forward = true;
