@@ -62,6 +62,7 @@ import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Limelig
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Sphere_Operator;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
+import org.firstinspires.ftc.teamcode.util.BangBangController;
 
 import java.util.function.Supplier;
 
@@ -142,6 +143,7 @@ public class Competition_Teleop extends OpMode {
     double targetHeading = Math.toRadians(180); // Radians
     PIDFController controller;
     boolean headingLock = false;
+    public static double f = 0.002;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -563,10 +565,11 @@ public class Competition_Teleop extends OpMode {
         // minimum modifier is 0.25
         if (modifier <= 0.25) {modifier = 0.25;}
         controller.setCoefficients(follower.constants.getCoefficientsHeadingPIDF());
+        double head = BangBangController.BangBangChicken(follower.getHeading(),targetHeading,f);
         controller.updateError(getHeadingError());
         telemetry.addData("Heading Error", controller.getError());
         if (headingLock) {
-            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, controller.run() + -gamepad1.right_stick_x);
+            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, head + -gamepad1.right_stick_x);
             telemetry.addData("Locking Heading", controller.getTargetPosition());
         }else{
             telemetry.addData("Not locking heading", -gamepad1.right_stick_x);
