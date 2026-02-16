@@ -218,6 +218,7 @@ public class Launcher {
             launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY + modifier;
             launcherMax = LAUNCHER_FAR_MAX_VELOCITY + modifier;
             launcherMin = LAUNCHER_FAR_MIN_VELOCITY + modifier;
+
         } else {
             launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY + modifier;
             launcherMax = LAUNCHER_CLOSE_MAX_VELOCITY + modifier;
@@ -227,6 +228,8 @@ public class Launcher {
         switch (rightLaunchState) {
             case IDLE:
                 if (shotRequested) {
+                    robot.leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
+                    robot.rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
                     rightLaunchState = LaunchState.SPIN_UP;
                     robot.intake.setDirection(DcMotorSimple.Direction.FORWARD);
                     robot.intake.setPower(1);
@@ -276,6 +279,8 @@ public class Launcher {
         switch (leftLaunchState) {
             case IDLE:
                 if (shotRequested) {
+                    robot.leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
+                    robot.rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
                     leftLaunchState = LaunchState.SPIN_UP;
                     robot.intake.setDirection(DcMotorSimple.Direction.FORWARD);
                     robot.intake.setPower(1);

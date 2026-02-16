@@ -34,12 +34,15 @@ import com.bylazar.field.FieldManager;
 import com.bylazar.field.PanelsField;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
+import com.bylazar.field.PanelsField;
+import com.bylazar.field.Style;
 import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
+import com.pedropathing.math.Vector;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
@@ -244,7 +247,9 @@ public class Competition_Teleop extends OpMode {
         telemetry.addData("Status", "Initialized");
         telemetry.addData("This is the TELEOP for 20525 for Config 'Silly Robot'"," This Does NOT MOVE (off the table) without input");
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
+        panelsField.init();
         panelsField.setOffsets(PanelsField.INSTANCE.getPresets().getPEDRO_PATHING());
+        panelsField.setStyle("red", "blue", 2.0);//fill, outline fill, outline width
     }
 
     /*
@@ -297,10 +302,35 @@ public class Competition_Teleop extends OpMode {
     public static boolean is_configuring = false;
 
 
+    public void draw(Pose pose, Style style) {
+        if (pose == null || Double.isNaN(pose.getX()) || Double.isNaN(pose.getY()) || Double.isNaN(pose.getHeading())) {
+            return;
+        }
+        panelsField.setStyle(style);
+        panelsField.moveCursor(pose.getX(), pose.getY());
+        panelsField.setFill("");
+        panelsField.circle(84);
+        Vector v = pose.getHeadingAsUnitVector();
+        v.setMagnitude(v.getMagnitude() * 9);
+        double x1 = pose.getX() + v.getXComponent() / 2, y1 = pose.getY() + v.getYComponent() / 2;
+        double x2 = pose.getX() + v.getXComponent(), y2 = pose.getY() + v.getYComponent();
+        panelsField.setStyle(style);
+        panelsField.moveCursor(x1, y1);
+        panelsField.line(x2, y2);
+        sendPacket();
+    }
 
+    private static final Style robotLook = new Style(
+            "", "#3F51B5", 0.0
+    );
+    public static void sendPacket() {
+        panelsField.update();
+    }
     @Override
     public void loop() {
         looptime.startTime();
+        draw(follower.getPose(),robotLook);
+        panelsField.update();
         follower.update();
         leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER,flywheel_tuning);
         rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER,flywheel_tuning);
@@ -328,14 +358,21 @@ public class Competition_Teleop extends OpMode {
         if (gamepad2.shareWasPressed()) {
             is_blue = true;
         }
-        if (gamepad2.y) {
-            gamepad2.rumble(100);
-            headingLock = true;
-            if (is_blue) {
-                targetHeading = Math.toRadians(Limelight.target_apriltag(robotComposition,20));
+        if (gamepad2.rightStickButtonWasPressed()) {
+            if (headingLock && last_heading_swap + heading_cooldown < System.currentTimeMillis()) {
+                gamepad2.rumble(100);
+                gamepad2.rumble(100);
+                headingLock = false;
             } else {
-                targetHeading = Math.toRadians(Limelight.target_apriltag(robotComposition,24));
+                gamepad2.rumble(100);
+                headingLock = true;
+                if (is_blue) {
+                    targetHeading = Math.toRadians(Limelight.target_apriltag(robotComposition,20));
+                } else {
+                    targetHeading = Math.toRadians(Limelight.target_apriltag(robotComposition,24));
+                }
             }
+
         }
         if (gamepad2.x) {
             gamepad2.setLedColor(1,0,0,100);
@@ -430,14 +467,38 @@ public class Competition_Teleop extends OpMode {
         if (gamepad2.dpad_right) {
             Limelight.look_middle(robotComposition);
         }
+        // HUMAN PLAYER LOAD
+        telemetry.addData("LEFT LAUNCHER DIRECTION", rightLauncher.getDirection());
+        if (gamepad2.dpadLeftWasPressed()) {
+            if (leftLauncher.getDirection() == DcMotorSimple.Direction.REVERSE) {
+                leftLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
+                rightLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+                leftLauncher.setPower(-1);
+                rightLauncher.setPower(-1);
+                leftLauncher.setVelocity(0);
+                rightLauncher.setVelocity(0);
+                leftLauncher.setVelocity(-launcherTarget);
+                rightLauncher.setVelocity(-launcherTarget);
+            } else {
+                leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+                rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
+                leftLauncher.setVelocity(launcherTarget);
+                rightLauncher.setVelocity(launcherTarget);
+            }
+
+        }
         if (gamepad2.y) {
             relocalize();
         }
         if (gamepad1.yWasPressed()) {
+            leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
+            rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
             leftLauncher.setVelocity(launcherTarget);
             rightLauncher.setVelocity(launcherTarget);
         } else if (gamepad1.bWasPressed()) {
             // stop flywheel
+            leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
+            rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
             leftLauncher.setVelocity(STOP_SPEED);
             rightLauncher.setVelocity(STOP_SPEED);
         }
@@ -565,12 +626,14 @@ public class Competition_Teleop extends OpMode {
         // minimum modifier is 0.25
         if (modifier <= 0.25) {modifier = 0.25;}
         controller.setCoefficients(follower.constants.getCoefficientsHeadingPIDF());
-        double head = BangBangController.BangBangChicken(follower.getHeading(),targetHeading,f);
+        controller.updateError(getHeadingError());
+        telemetry.addData("Current Heading", Math.toDegrees(follower.getHeading()));
+        telemetry.addData("Target Heading", Math.toDegrees(targetHeading));
         controller.updateError(getHeadingError());
         telemetry.addData("Heading Error", controller.getError());
         if (headingLock) {
-            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, head + -gamepad1.right_stick_x);
-            telemetry.addData("Locking Heading", controller.getTargetPosition());
+            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, controller.run() + -gamepad1.right_stick_x);
+            telemetry.addData("Locking Heading", controller.run());
         }else{
             telemetry.addData("Not locking heading", -gamepad1.right_stick_x);
             follower.setTeleOpDrive(-gamepad1.left_stick_y * modifier, -gamepad1.left_stick_x * modifier, -gamepad1.right_stick_x * modifier);

@@ -22,7 +22,7 @@ public class RuntOdometryWheelsConstants {
             .lateralZeroPowerAcceleration(-88.53049322546104)
             .automaticHoldEnd(true)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.30, 0, 0.03, 0.03))
-            .headingPIDFCoefficients(new PIDFCoefficients(1, 0, 0.02, 0.01))
+            .headingPIDFCoefficients(new PIDFCoefficients(1, 3, 0.01, 0.01))
             .lateralZeroPowerAcceleration(-67.60657954116293);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
