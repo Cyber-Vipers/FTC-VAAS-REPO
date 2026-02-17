@@ -2,6 +2,7 @@
 package org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.auto;
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
+import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Sphere_Operator.force_divert;
 import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Sphere_Operator.handle_divert;
 
 import com.bylazar.field.FieldManager;
@@ -38,15 +39,7 @@ public class BlueCloseAutoIteration2 extends OpMode {
     public static double shoot_degree = 147;
     public static double intake_degree = 174;
     public static Pose shoot_pos = new Pose(57.42056074766355,106.54205607476636,Math.toRadians(shoot_degree));
-
-
-
     private static final FieldManager panelsField = PanelsField.INSTANCE.getField();
-
-
-
-
-
     private DcMotor leftFrontDrive = null;
     private DcMotor rightFrontDrive = null;
     private DcMotor leftBackDrive = null;
@@ -58,8 +51,8 @@ public class BlueCloseAutoIteration2 extends OpMode {
     private Servo leftFeeder = null;
     private Servo rightFeeder = null;
     private Servo diverter = null;
-    public Rev2mDistanceSensor color1;
-    public Rev2mDistanceSensor color2;
+    public Rev2mDistanceSensor colorright;
+    public Rev2mDistanceSensor colorleft;
     public DcMotor feeder;
     public Limelight3A limelight;
     public Robot_Composition robotComposition;
@@ -97,8 +90,8 @@ public class BlueCloseAutoIteration2 extends OpMode {
         rightFeeder = hardwareMap.get(Servo.class, "indexRight");
         diverter = hardwareMap.get(Servo.class, "modulator");
         feeder = hardwareMap.get(DcMotor.class, "feeder");
-        color1 = hardwareMap.get(Rev2mDistanceSensor.class,"color2");
-        color2 = hardwareMap.get(Rev2mDistanceSensor.class, "color1");
+        colorleft = hardwareMap.get(Rev2mDistanceSensor.class, "color2");
+        colorright = hardwareMap.get(Rev2mDistanceSensor.class, "color1");
         limelight = hardwareMap.get(Limelight3A.class,"limelight");
 
         /*
@@ -144,29 +137,28 @@ public class BlueCloseAutoIteration2 extends OpMode {
 
         follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
         follower.setStartingPose(startingPose);
-        follower.setMaxPower(0.9);
-
+        follower.setMaxPower(1);
         paths = new Paths(follower); // Build paths
         intake.setDirection(DcMotorSimple.Direction.FORWARD);
         panelsTelemetry.debug("Status", "Initialized");
         panelsTelemetry.update(telemetry);
-        robotComposition = new Robot_Composition(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, leftLauncher, rightLauncher, intake, feeder, leftFeeder, rightFeeder,color1,color2,follower,telemetry,diverter,limelight_servo,limelight);
+        robotComposition = new Robot_Composition(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, leftLauncher, rightLauncher, intake, feeder, leftFeeder, rightFeeder,colorright,colorleft,follower,telemetry,diverter,limelight_servo,limelight);
     }
     @Override
     public void init_loop() {
         shoot_timer.reset();
         shoot_timer.startTime();
     }
-
+public ElapsedTime timer = new ElapsedTime();
     @Override
     public void loop() {
         follower.update(); // Update Pedro Pathing
         panelsField.update();
+        double distance_left = colorleft.getDistance(DistanceUnit.CM);
+        double distance_right = colorright.getDistance(DistanceUnit.CM);
+        handle_divert(robotComposition,distance_right,distance_left);
         move();
         prevent_false_shots();
-        double distance_left = color1.getDistance(DistanceUnit.CM);
-        double distance_right = color2.getDistance(DistanceUnit.CM);
-        handle_divert(robotComposition,distance_right,distance_left);
         paths = new Paths(follower);
         // Log values to Panels and Driver Station
         telemetry.addData("Current Path", current_state.name());
@@ -210,31 +202,35 @@ public class BlueCloseAutoIteration2 extends OpMode {
                         current_state = States.PrepareIntake;
                     } else {
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.60) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
+                            Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.50) {
-                            Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
+                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.40) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
+                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.40) {
                             Launcher.spam(robotComposition, Launcher.LauncherDistance.FAR, 0);
                         }
                     }
                 }
+                timer.reset();
                 break;
             case PrepareIntake:
-
                 if (follower.atParametricEnd()) {
-                    follower.followPath(paths.Shoot);
-                    current_state = States.ApproachIntake1;
+                    force_divert(robotComposition,false);
+                    if (timer.milliseconds() >= 1200) {
+                        follower.followPath(paths.Shoot);
+                        current_state = States.ApproachIntake1;
 //                    follower.followPath(paths.ApproachIntake1);
 //                    current_state = States.ApproachIntake1;
+                    }
+
                 }
                 break;
             case ApproachIntake1:
-                follower.setMaxPower(0.3);
+                follower.setMaxPower(0.7);
 
                 if (follower.atParametricEnd()) {
                     intake.setPower(1);
@@ -261,29 +257,34 @@ public class BlueCloseAutoIteration2 extends OpMode {
                         current_state = States.PrepareIntake2;
                     } else {
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.90) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
+                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.70) {
-                            Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
+                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.60) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
+                            Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.10) {
                             Launcher.spam(robotComposition, Launcher.LauncherDistance.FAR, 0);
                         }
                     }
                 }
+                timer.reset();
                 break;
             case PrepareIntake2:
                 if (follower.atParametricEnd()) {
-                    follower.followPath(paths.ApproachIntake2);
-                    intake.setPower(1);
-                    current_state = States.ApproachIntake2;
+                    force_divert(robotComposition,true);
+                    if (timer.milliseconds() > 1200) {
+
+                        follower.followPath(paths.ApproachIntake2);
+                        intake.setPower(1);
+                        current_state = States.ApproachIntake2;
+                    }
                 }
                 break;
             case ApproachIntake2:
-                follower.setMaxPower(0.3);
+                follower.setMaxPower(0.7);
                 if (follower.atParametricEnd()) {
                     follower.followPath(paths.Intake2);
                     current_state = States.Intake2;
@@ -306,13 +307,13 @@ public class BlueCloseAutoIteration2 extends OpMode {
                         current_state = States.Shoot3;
                     } else {
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.90) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
+                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.70) {
-                            Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
+                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.60) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
+                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.10) {
                             Launcher.spam(robotComposition, Launcher.LauncherDistance.FAR, 0);

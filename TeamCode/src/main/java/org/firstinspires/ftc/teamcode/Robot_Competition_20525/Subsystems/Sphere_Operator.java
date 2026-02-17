@@ -20,27 +20,40 @@ public class Sphere_Operator {
 
     public static double LEFT_POSITION = 0.5962; //the left and right position for the diverter servo
     public static double RIGHT_POSITION = 0;
+    public static boolean forcing_divert = false;
+    public static long force_divert_time = 3000;
+    public static long last_forced_divert = 0;
+
+    public static void force_divert(Robot_Composition robot, boolean left) {
+        forcing_divert = true;
+        if (left) {
+            robot.diverter.setPosition(LEFT_POSITION);
+        } else {
+            robot.diverter.setPosition(RIGHT_POSITION);
+        }
+        last_forced_divert = System.currentTimeMillis();
+    }
+
     public static void handle_divert(Robot_Composition robot,double left_sensed_distance, double right_sensed_distance) {
         robot.telemetry.addData("Left Distance", Math.round(left_sensed_distance));
         robot.telemetry.addData("Right Distance", Math.round(right_sensed_distance));
+        if (!(forcing_divert && System.currentTimeMillis() + last_forced_divert > force_divert_time)) {
+            forcing_divert = false;
+            boolean left_condition = left_sensed_distance <= left_distance;
+            boolean right_condition = right_sensed_distance <= right_distance;
+            robot.telemetry.addData("Left Ball?", left_condition);
+            robot.telemetry.addData("Right Ball?", right_condition);
+            //TODO Fix distance (low priority)
+            if (!left_condition && !right_condition || left_condition && right_condition) {
+                return;
+            }
 
-
-
-        boolean left_condition = left_sensed_distance <= left_distance;
-        boolean right_condition = right_sensed_distance <= right_distance;
-        robot.telemetry.addData("Left Ball?", left_condition);
-        robot.telemetry.addData("Right Ball?", right_condition);
-        //TODO Fix distance (low priority)
-        if (!left_condition && !right_condition || left_condition && right_condition) {
-            return;
+            if (left_condition && !right_condition) {
+                robot.diverter.setPosition(RIGHT_POSITION);
+                return;
+            }
+            robot.diverter.setPosition(LEFT_POSITION);
         }
-
-        if (left_condition && !right_condition) {
-            robot.diverter.setPosition(RIGHT_POSITION);
-            return;
-        }
-        robot.diverter.setPosition(LEFT_POSITION);
-
     }
 //    public static Sphere sphere_in_maw(Robot_Composition robot) {
 //        //TODO Fix distance (low priority)

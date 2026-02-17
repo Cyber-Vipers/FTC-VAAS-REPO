@@ -133,7 +133,7 @@ public class Competition_Teleop extends OpMode {
 
     private IntakeState intakeState = IntakeState.OFF;
     private Follower follower;
-    public static Pose startingPose = new Pose(63.5,8,Math.toRadians(90)); //See ExampleAuto to understand how to use this
+    public static Pose startingPose = new Pose(9.5,9.5,Math.toRadians(90)); //See ExampleAuto to understand how to use this
     private boolean automatedDrive;
     private Launcher.LauncherDistance launcherDistance = Launcher.LauncherDistance.CLOSE;
     public Servo limelight_servo;
@@ -147,6 +147,7 @@ public class Competition_Teleop extends OpMode {
     PIDFController controller;
     boolean headingLock = false;
     public static double f = 0.002;
+    public static double override_value = 0;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -299,9 +300,12 @@ public class Competition_Teleop extends OpMode {
     public int spam_mult = 1;
     public boolean is_blue = false;
     private static final FieldManager panelsField = PanelsField.INSTANCE.getField();
-    public static boolean is_configuring = false;
-
-
+    public static boolean is_configuring = true;
+    public static Pose blueGoalPosition = new Pose(14,130);
+    public static Pose redGoalPosition = new Pose(130,130);
+    public static Pose goalPosition = new Pose(14,130);
+    public static double regression_output = 0;
+    public static boolean regression_active = false;
     public void draw(Pose pose, Style style) {
         if (pose == null || Double.isNaN(pose.getX()) || Double.isNaN(pose.getY()) || Double.isNaN(pose.getHeading())) {
             return;
@@ -329,9 +333,11 @@ public class Competition_Teleop extends OpMode {
     @Override
     public void loop() {
         looptime.startTime();
+        telemetry.addData("Position", follower.getPose());
         draw(follower.getPose(),robotLook);
         panelsField.update();
         follower.update();
+        telemetry.addData("Distance to goal", distance_to_goal(follower.getPose()));
         leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER,flywheel_tuning);
         rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER,flywheel_tuning);
         double distance_left = colorleft.getDistance(DistanceUnit.CM);
@@ -354,9 +360,11 @@ public class Competition_Teleop extends OpMode {
         }
         if (gamepad2.startWasPressed()) {
             is_blue = false;
+            goalPosition = redGoalPosition;;
         }
         if (gamepad2.shareWasPressed()) {
             is_blue = true;
+            goalPosition = blueGoalPosition;
         }
         if (gamepad2.rightStickButtonWasPressed()) {
             if (headingLock && last_heading_swap + heading_cooldown < System.currentTimeMillis()) {
@@ -468,7 +476,7 @@ public class Competition_Teleop extends OpMode {
             Limelight.look_middle(robotComposition);
         }
         // HUMAN PLAYER LOAD
-        telemetry.addData("LEFT LAUNCHER DIRECTION", rightLauncher.getDirection());
+        telemetry.addData("RIGHT LAUNCHER DIRECTION", rightLauncher.getDirection());
         if (gamepad2.dpadLeftWasPressed()) {
             if (leftLauncher.getDirection() == DcMotorSimple.Direction.REVERSE) {
                 leftLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -493,8 +501,18 @@ public class Competition_Teleop extends OpMode {
         if (gamepad1.yWasPressed()) {
             leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
             rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
-            leftLauncher.setVelocity(launcherTarget);
-            rightLauncher.setVelocity(launcherTarget);
+            if (is_configuring) {
+                leftLauncher.setVelocity(override_value);
+                rightLauncher.setVelocity(override_value);
+            } else {
+                leftLauncher.setVelocity(launcherTarget);
+                rightLauncher.setVelocity(launcherTarget);
+            }
+            if (regression_active) {
+                is_configuring = true;
+                override_value = regression_speed(follower.getPose());
+            }
+
         } else if (gamepad1.bWasPressed()) {
             // stop flywheel
             leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
@@ -541,9 +559,16 @@ public class Competition_Teleop extends OpMode {
         /*
          * Now we call our "Launch" function.
          */
+        if (regression_active) {
+            regression_output = override_value;
+        } else {
+            regression_output = regression_speed(follower.getPose());
+        }
 
-        launchLeft(gamepad1.dpadLeftWasPressed(),robotComposition,launcherDistance,0);
-        launchRight(gamepad1.dpadRightWasPressed(),robotComposition,launcherDistance,0);
+        telemetry.addData("Is configuring?", is_configuring);
+        telemetry.addData("Regression Output", regression_output);
+        launchLeft(gamepad1.dpadLeftWasPressed(),robotComposition,launcherDistance,0,is_configuring,override_value);
+        launchRight(gamepad1.dpadRightWasPressed(),robotComposition,launcherDistance,0,is_configuring,override_value);
         if (gamepad1.dpad_up) {
             Launcher.spam(robotComposition,launcherDistance,0);
             gamepad1.rumble(100);
@@ -559,8 +584,8 @@ public class Competition_Teleop extends OpMode {
             }
             panelsTelemetry.addLine("Baller");
             panelsTelemetry.addData("DIVERTER POSITION", diverter.getPosition());
-            panelsTelemetry.addData("Left Velocity", leftLauncher.getVelocity(AngleUnit.DEGREES));
-            telemetry.addData("Right Velocity", rightLauncher.getVelocity(AngleUnit.DEGREES));
+            panelsTelemetry.addData("Left Velocity", leftLauncher.getVelocity());
+            telemetry.addData("Right Velocity", rightLauncher.getVelocity());
             panelsTelemetry.debug("X", follower.getPose().getX());
             panelsTelemetry.debug("Y", follower.getPose().getY());
             panelsTelemetry.debug("Heading", follower.getPose().getHeading());
@@ -574,6 +599,7 @@ public class Competition_Teleop extends OpMode {
 
         panelsTelemetry.update();
         panelsTelemetry.update(telemetry);
+
         looptime.reset();
     }
 
@@ -621,6 +647,22 @@ public class Competition_Teleop extends OpMode {
         return MathFunctions.getTurnDirection(follower.getPose().getHeading(), targetHeading) * MathFunctions.getSmallestAngleDifference(follower.getPose().getHeading(), targetHeading);
     }
 
+    public double distance_to_goal(Pose pose) {
+        //sqrt((x2-x1)^2+(y2-y1)^2)
+        return Math.sqrt(Math.pow(goalPosition.getX()-pose.getX(),2)+Math.pow(goalPosition.getY()-pose.getY(),2));
+    }
+
+
+    //GET THE MAGIC NUMBERS FROM DESMOS ! ! !
+    public static double factor1 = -0.191706;
+    public static double factor2 = 34.98199;
+    public static double factor3 = 277.18926;
+
+
+    public double regression_speed(Pose pose) {
+        double dist = distance_to_goal(pose);
+        return Math.pow(factor1*dist,2) + factor2*dist - factor3;
+    }
     void mecanumDrive() {
         double modifier = (1 - gamepad1.right_trigger);
         // minimum modifier is 0.25
