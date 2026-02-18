@@ -300,7 +300,7 @@ public class Competition_Teleop extends OpMode {
     public int spam_mult = 1;
     public boolean is_blue = false;
     private static final FieldManager panelsField = PanelsField.INSTANCE.getField();
-    public static boolean is_configuring = true;
+    public static boolean is_configuring = false;
     public static Pose blueGoalPosition = new Pose(14,130);
     public static Pose redGoalPosition = new Pose(130,130);
     public static Pose goalPosition = new Pose(14,130);
@@ -654,14 +654,14 @@ public class Competition_Teleop extends OpMode {
 
 
     //GET THE MAGIC NUMBERS FROM DESMOS ! ! !
-    public static double factor1 = -0.191706;
-    public static double factor2 = 34.98199;
-    public static double factor3 = 277.18926;
+    public static double factor1 = 0.0383806;
+    public static double factor2 = 2.93713;
+    public static double factor3 = 1237.14761;
 
 
     public double regression_speed(Pose pose) {
         double dist = distance_to_goal(pose);
-        return Math.pow(factor1*dist,2) + factor2*dist - factor3;
+        return Math.pow(factor1*dist,2) - factor2*dist + factor3;
     }
     void mecanumDrive() {
         double modifier = (1 - gamepad1.right_trigger);

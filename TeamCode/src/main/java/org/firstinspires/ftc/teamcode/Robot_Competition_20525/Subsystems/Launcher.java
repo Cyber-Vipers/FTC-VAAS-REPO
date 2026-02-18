@@ -280,7 +280,7 @@ public class Launcher {
         if (overide) {
             launcherTarget = override_value;
             launcherMin = override_value - 50;
-
+            launcherMax = override_value + 50;
         }
 
         switch (rightLaunchState) {
@@ -335,7 +335,8 @@ public class Launcher {
         }
         if (overide) {
             launcherTarget = override_value;
-            launcherMin = override_value - 50;
+            launcherMin = override_value - 25;
+            launcherMax = override_value + 25;
         }
 
         switch (leftLaunchState) {
