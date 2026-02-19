@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 @Autonomous(name = "MOVE_SERVO_TO_0", group = "Testing Opmodes")
 public class MOVE_SERVO_TO_0 extends OpMode {
 
-    public String servo_name = "modulator";
+    public String servo_name = "indexLeft";
     public Servo servo;
     @Override
     public void init() {

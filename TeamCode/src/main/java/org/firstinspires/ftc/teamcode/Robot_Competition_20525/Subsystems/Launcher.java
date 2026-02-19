@@ -198,7 +198,35 @@ public class Launcher {
     // public static ElapsedTime spam_timer = new ElapsedTime();
     // public static long wait_time = 250;
     public static float spam_modifier = 200;
+    public static double distance_to_goal(Pose pose,Pose goalPosition) {
+        //sqrt((x2-x1)^2+(y2-y1)^2)
+        return Math.sqrt(Math.pow(goalPosition.getX()-pose.getX(),2)+Math.pow(goalPosition.getY()-pose.getY(),2));
+    }
+
+
+    //GET THE MAGIC NUMBERS FROM DESMOS ! ! !
+    public static double quadraticFactor1 = 0.0692004;
+    public static double quadraticFactor2 = 8.23118;
+    public static double quadraticFactor3 = 1441.74142    ;
+
+
+    public static double quadratic_regression(Pose pose,Pose goalPosition) {
+        double dist = distance_to_goal(pose,goalPosition);
+        return Math.pow(quadraticFactor1*dist,2) - quadraticFactor2*dist + quadraticFactor3;
+    }
+    public static double quarticFactor1 = 0.000270501;
+    public static double quarticFactor2 = 0.0920206;
+    public static double quarticFactor3 = 11.41175;
+    public static double quarticFactor4 = 607.57568;
+    public static double quarticFactor5 = 12902.1395;
+
+
+    public double quartic_regression(Pose pose,Pose goalPosition) {
+        double dist = distance_to_goal(pose,goalPosition);
+        return Math.pow(quarticFactor1*dist,4) - Math.pow(quarticFactor2*dist,3) + Math.pow(quarticFactor3*dist,2) + quarticFactor4*dist + quarticFactor5;
+    }
     public static void spam(Robot_Composition robot, LauncherDistance launcherDistance,int modifier) {
+
         if (last_left_speed > robot.leftLauncher.getVelocity() - 200) {
             //detect dip
             modifier = modifier + 200;

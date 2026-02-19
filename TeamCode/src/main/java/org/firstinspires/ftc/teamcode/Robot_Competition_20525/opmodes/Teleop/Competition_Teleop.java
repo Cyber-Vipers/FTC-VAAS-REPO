@@ -24,8 +24,10 @@ package org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.Teleop;/*
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
+import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher.distance_to_goal;
 import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher.launchLeft;
 import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher.launchRight;
+import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher.quadratic_regression;
 import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Sphere_Operator.handle_divert;
 
 import com.bylazar.configurables.annotations.Configurable;
@@ -34,16 +36,15 @@ import com.bylazar.field.FieldManager;
 import com.bylazar.field.PanelsField;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
-import com.bylazar.field.PanelsField;
 import com.bylazar.field.Style;
 import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.geometry.CoordinateSystem;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
 import com.pedropathing.math.Vector;
-import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -58,7 +59,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
-import org.firstinspires.ftc.robotcore.internal.ui.GamepadUser;
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Util.Robot_Composition;
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher;
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Limelight;
@@ -66,8 +66,6 @@ import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Sphere_
 
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 import org.firstinspires.ftc.teamcode.util.BangBangController;
-
-import java.util.function.Supplier;
 
 /*
  * This file includes a teleop (driver-controlled) file for the goBILDA® Robot in 3 Days for the
@@ -243,6 +241,8 @@ public class Competition_Teleop extends OpMode {
          */
         intake.setDirection(DcMotorSimple.Direction.REVERSE);
         targetHeading = Math.toRadians(130); // Radians
+        limelight.setPollRateHz(100);
+        limelight.start();
         PIDFController controller = new PIDFController(follower.constants.coefficientsHeadingPIDF);
         boolean headingLock = true;
         telemetry.addData("Status", "Initialized");
@@ -273,8 +273,7 @@ public class Competition_Teleop extends OpMode {
         Launcher.spinup(robotComposition,launcherDistance,0);
         Limelight.look_up(robotComposition);
         //)
-        limelight.setPollRateHz(100);
-        limelight.start();
+
         follower.startTeleopDrive();
     }
 
@@ -306,6 +305,12 @@ public class Competition_Teleop extends OpMode {
     public static Pose goalPosition = new Pose(14,130);
     public static double regression_output = 0;
     public static boolean regression_active = false;
+
+    public static enum RegressionMode {
+        Quadratic,
+    }
+
+    public static RegressionMode regressionMode = RegressionMode.Quadratic;
     public void draw(Pose pose, Style style) {
         if (pose == null || Double.isNaN(pose.getX()) || Double.isNaN(pose.getY()) || Double.isNaN(pose.getHeading())) {
             return;
@@ -337,12 +342,14 @@ public class Competition_Teleop extends OpMode {
         draw(follower.getPose(),robotLook);
         panelsField.update();
         follower.update();
-        telemetry.addData("Distance to goal", distance_to_goal(follower.getPose()));
+        telemetry.addData("Distance to goal", distance_to_goal(follower.getPose(),goalPosition));
+        double output = Math.max(Math.min(BangBangController.BangBangChicken(rightLauncher.getVelocity(),1300d+25d,f),1),-1);
         leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER,flywheel_tuning);
         rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER,flywheel_tuning);
         double distance_left = colorleft.getDistance(DistanceUnit.CM);
         double distance_right = colorright.getDistance(DistanceUnit.CM);
         panelsField.moveCursor(follower.getPose().getX(), follower.getPose().getY());
+
         if (rightLauncher.getVelocity() >= Launcher.launcherTarget) {
             gamepad1.setLedColor(0,1,0,100);
         }
@@ -510,7 +517,11 @@ public class Competition_Teleop extends OpMode {
             }
             if (regression_active) {
                 is_configuring = true;
-                override_value = regression_speed(follower.getPose());
+                switch (regressionMode) {
+                    case Quadratic:
+                        override_value = quadratic_regression(follower.getPose(),goalPosition);
+                        break;
+                }
             }
 
         } else if (gamepad1.bWasPressed()) {
@@ -559,10 +570,11 @@ public class Competition_Teleop extends OpMode {
         /*
          * Now we call our "Launch" function.
          */
+
         if (regression_active) {
+            is_configuring = true;
+            override_value = quadratic_regression(follower.getPose(),goalPosition);
             regression_output = override_value;
-        } else {
-            regression_output = regression_speed(follower.getPose());
         }
 
         telemetry.addData("Is configuring?", is_configuring);
@@ -589,7 +601,7 @@ public class Competition_Teleop extends OpMode {
             panelsTelemetry.debug("X", follower.getPose().getX());
             panelsTelemetry.debug("Y", follower.getPose().getY());
             panelsTelemetry.debug("Heading", follower.getPose().getHeading());
-            panelsTelemetry.addData("DISTANCE TO GOAL", Launcher.distance_to_goal(robotComposition,true));
+            panelsTelemetry.addData("DISTANCE TO GOAL", distance_to_goal(robotComposition,true));
             panelsTelemetry.addData("State", leftLaunchState);
             panelsTelemetry.addData("launch distance", launcherDistance);
             panelsTelemetry.addData("Left Launcher Velocity", leftLauncher.getVelocity());
@@ -623,18 +635,20 @@ public class Competition_Teleop extends OpMode {
                 Pose3D poser = fiducialResult.getRobotPoseFieldSpace();
                 telemetry.addData("X", poser.getPosition().x);
                 telemetry.addData("Y", poser.getPosition().y);
-
-            }
-            if (result.isValid()) {
-                Pose3D botpose_mt2 = result.getBotpose_MT2();
-                if (botpose_mt2 != null) {
-                    double x = botpose_mt2.getPosition().x;
-                    double y = botpose_mt2.getPosition().y;
-                    double heading = botpose_mt2.getOrientation().getYaw();
-                    telemetry.addData("MT2 Location:", "(" + x + ", " + y + ")");
-                    pose = getRobotPoseFromCamera(x, y,heading);
+                if (result.isValid()) {
+                    Pose3D botpose_mt2 = result.getBotpose_MT2();
+                    if (botpose_mt2 != null) {
+                        double x = poser.getPosition().toUnit(DistanceUnit.INCH).x;
+                        double y = poser.getPosition().toUnit(DistanceUnit.INCH).y;
+                        double heading = poser.getOrientation().getYaw(AngleUnit.RADIANS);
+                        telemetry.addData("MT2 Location:", "(" + x + ", " + y + ")");
+                        pose = getRobotPoseFromCamera(x, y,heading);
+                        telemetry.addData("GUESSED LOCATION", pose);
+                    }
                 }
             }
+
+
             follower.setPose(pose);
     }
     private Pose getRobotPoseFromCamera(double x, double y,double heading) {
@@ -647,35 +661,25 @@ public class Competition_Teleop extends OpMode {
         return MathFunctions.getTurnDirection(follower.getPose().getHeading(), targetHeading) * MathFunctions.getSmallestAngleDifference(follower.getPose().getHeading(), targetHeading);
     }
 
-    public double distance_to_goal(Pose pose) {
-        //sqrt((x2-x1)^2+(y2-y1)^2)
-        return Math.sqrt(Math.pow(goalPosition.getX()-pose.getX(),2)+Math.pow(goalPosition.getY()-pose.getY(),2));
-    }
 
 
-    //GET THE MAGIC NUMBERS FROM DESMOS ! ! !
-    public static double factor1 = 0.0383806;
-    public static double factor2 = 2.93713;
-    public static double factor3 = 1237.14761;
 
 
-    public double regression_speed(Pose pose) {
-        double dist = distance_to_goal(pose);
-        return Math.pow(factor1*dist,2) - factor2*dist + factor3;
-    }
+
     void mecanumDrive() {
         double modifier = (1 - gamepad1.right_trigger);
         // minimum modifier is 0.25
         if (modifier <= 0.25) {modifier = 0.25;}
         controller.setCoefficients(follower.constants.getCoefficientsHeadingPIDF());
+        double head = BangBangController.BangBangChicken(follower.getHeading(),targetHeading,f,true);
         controller.updateError(getHeadingError());
         telemetry.addData("Current Heading", Math.toDegrees(follower.getHeading()));
         telemetry.addData("Target Heading", Math.toDegrees(targetHeading));
         controller.updateError(getHeadingError());
         telemetry.addData("Heading Error", controller.getError());
         if (headingLock) {
-            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, controller.run() + -gamepad1.right_stick_x);
-            telemetry.addData("Locking Heading", controller.run());
+            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, head + -gamepad1.right_stick_x);
+            telemetry.addData("Locking Heading", head);
         }else{
             telemetry.addData("Not locking heading", -gamepad1.right_stick_x);
             follower.setTeleOpDrive(-gamepad1.left_stick_y * modifier, -gamepad1.left_stick_x * modifier, -gamepad1.right_stick_x * modifier);

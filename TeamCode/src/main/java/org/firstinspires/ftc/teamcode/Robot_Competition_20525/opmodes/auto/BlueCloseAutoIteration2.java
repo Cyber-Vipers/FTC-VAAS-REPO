@@ -2,6 +2,7 @@
 package org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.auto;
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
+import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher.quadratic_regression;
 import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Sphere_Operator.force_divert;
 import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Sphere_Operator.handle_divert;
 
@@ -30,7 +31,11 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Util.Robot_Composition;
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher;
+import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.Teleop.Competition_Teleop;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
+
+import java.io.File;
+import java.io.IOException;
 
 //todo fix heading
 @Autonomous(name = "Blue Close Auto", group = "Autonomous")
@@ -143,6 +148,17 @@ public class BlueCloseAutoIteration2 extends OpMode {
         panelsTelemetry.debug("Status", "Initialized");
         panelsTelemetry.update(telemetry);
         robotComposition = new Robot_Composition(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, leftLauncher, rightLauncher, intake, feeder, leftFeeder, rightFeeder,colorright,colorleft,follower,telemetry,diverter,limelight_servo,limelight);
+        try {
+            File myObj = new File("side.txt"); // Create File object
+            if (myObj.createNewFile()) {           // Try to create the file
+                System.out.println("File created: " + myObj.getName());
+            } else {
+                System.out.println("File already exists.");
+            }
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace(); // Print error details
+        }
     }
     @Override
     public void init_loop() {
@@ -171,6 +187,8 @@ public ElapsedTime timer = new ElapsedTime();
 
     }
 
+    public static double regression_value = 0;
+
     public static long fire_wait_time = 5000;
     public ElapsedTime shoot_timer = new ElapsedTime();
     public void prevent_false_shots() {
@@ -179,8 +197,11 @@ public ElapsedTime timer = new ElapsedTime();
         }
     }
 
+    public static Pose goalPosition = new Pose(14,130);
+
     public ElapsedTime initial_wait = new ElapsedTime();
     public void move() {
+        regression_value = quadratic_regression(follower.getPose(),goalPosition);
         switch (current_state) {
             case Initial:
                 if (shoot_timer.milliseconds() > 600) {
@@ -202,16 +223,16 @@ public ElapsedTime timer = new ElapsedTime();
                         current_state = States.PrepareIntake;
                     } else {
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.60) {
-                            Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
+                            Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, true, regression_value);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.50) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
+                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, true, regression_value);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.40) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
+                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, true, regression_value);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.40) {
-                            Launcher.spam(robotComposition, Launcher.LauncherDistance.FAR, 0);
+                            Launcher.spam(robotComposition, Launcher.LauncherDistance.CLOSE,  0);
                         }
                     }
                 }
@@ -257,16 +278,16 @@ public ElapsedTime timer = new ElapsedTime();
                         current_state = States.PrepareIntake2;
                     } else {
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.90) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
+                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, true, regression_value);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.70) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
+                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, true, regression_value);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.60) {
-                            Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
+                            Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, true, regression_value);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.10) {
-                            Launcher.spam(robotComposition, Launcher.LauncherDistance.FAR, 0);
+                            Launcher.spam(robotComposition, Launcher.LauncherDistance.CLOSE, 0);
                         }
                     }
                 }
@@ -307,13 +328,13 @@ public ElapsedTime timer = new ElapsedTime();
                         current_state = States.Shoot3;
                     } else {
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.90) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
+                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, true, regression_value);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.70) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
+                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, true, regression_value);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.60) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, false, 0);
+                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.CLOSE, 0, true, regression_value);
                         }
                         if (shoot_timer.milliseconds() > fire_wait_time * 0.10) {
                             Launcher.spam(robotComposition, Launcher.LauncherDistance.FAR, 0);

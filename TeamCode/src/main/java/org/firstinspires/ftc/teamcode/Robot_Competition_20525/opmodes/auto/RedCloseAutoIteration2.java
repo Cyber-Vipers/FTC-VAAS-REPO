@@ -38,13 +38,7 @@ public class RedCloseAutoIteration2 extends OpMode {
     public static double intake_degree = Math.toRadians(0);
     public static Pose shoot_pos = new Pose(86.579,106.542,Math.toRadians(shoot_degree));
 
-
-
     private static final FieldManager panelsField = PanelsField.INSTANCE.getField();
-
-
-
-
 
     private DcMotor leftFrontDrive = null;
     private DcMotor rightFrontDrive = null;
