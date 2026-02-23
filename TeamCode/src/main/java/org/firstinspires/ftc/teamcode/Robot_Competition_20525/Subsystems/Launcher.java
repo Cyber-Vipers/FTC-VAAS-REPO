@@ -27,7 +27,7 @@ public class Launcher {
     public static double LAUNCHER_FAR_MIN_VELOCITY = 1425; //minimum required to start a shot for far goal.
     public static double LAUNCHER_CLOSE_MAX_VELOCITY = 1140;
     public static double LAUNCHER_CLOSE_TARGET_VELOCITY = 1000; //in ticks/second for the close goal.
-    public static double LAUNCHER_CLOSE_MIN_VELOCITY = 975; //minimum required to start a shot for close goal.
+    public static double LAUNCHER_CLOSE_MIN_VELOCITY = 1000 ; //minimum required to start a shot for close goal.
 
     public static double launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY; //These variables allow
     public static double launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
@@ -205,14 +205,14 @@ public class Launcher {
 
 
     //GET THE MAGIC NUMBERS FROM DESMOS ! ! !
-    public static double quadraticFactor1 = 0.0692004;
-    public static double quadraticFactor2 = 8.23118;
-    public static double quadraticFactor3 = 1441.74142    ;
+    public static double quadraticFactor1 = 3.82104;
+    public static double quadraticFactor2 = 967.9013;
+    public static double quadraticFactor3 = 1237.14761;
 
 
     public static double quadratic_regression(Pose pose,Pose goalPosition) {
         double dist = distance_to_goal(pose,goalPosition);
-        return Math.pow(quadraticFactor1*dist,2) - quadraticFactor2*dist + quadraticFactor3;
+        return (quadraticFactor1*dist + quadraticFactor2) + 100;
     }
     public static double quarticFactor1 = 0.000270501;
     public static double quarticFactor2 = 0.0920206;
@@ -227,20 +227,13 @@ public class Launcher {
     }
     public static void spam(Robot_Composition robot, LauncherDistance launcherDistance,int modifier) {
 
-        if (last_left_speed > robot.leftLauncher.getVelocity() - 200) {
-            //detect dip
-            modifier = modifier + 200;
-        }
-        launchRight(true,robot,launcherDistance,modifier + spam_modifier, false, 0);
-        launchLeft(true,robot,launcherDistance,modifier + spam_modifier, false, 0);
+        launchRight(true,robot,launcherDistance,modifier, false, 0);
+        launchLeft(true,robot,launcherDistance,modifier, false, 0);
 
 
     }
     public static void launchRight(boolean shotRequested, Robot_Composition robot,LauncherDistance launcherDistance,float modifier) {
-        if (last_right_speed > robot.leftLauncher.getVelocity() - 200) {
-            //detect dip
-            modifier = modifier + 200;
-        }
+
         last_right_speed = robot.rightLauncher.getVelocity();
         if (launcherDistance.equals(LauncherDistance.FAR)) {
             launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY + modifier;
@@ -272,7 +265,7 @@ public class Launcher {
                 }
                 break;
             case LAUNCH:
-                robot.feeder.setPower(1);
+                robot.feeder.setPower(0.75);
                 robot.rightFeeder.setPosition(right_feeder_up);
 
                 rightFeederTimer.reset();
@@ -290,10 +283,6 @@ public class Launcher {
     }
 
     public static void launchRight(boolean shotRequested, Robot_Composition robot,LauncherDistance launcherDistance,float modifier,boolean overide, double override_value) {
-        if (last_right_speed > robot.leftLauncher.getVelocity() - 200) {
-            //detect dip
-            modifier = modifier + 200;
-        }
         last_right_speed = robot.rightLauncher.getVelocity();
         if (launcherDistance.equals(LauncherDistance.FAR)) {
             launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY + modifier;
@@ -325,12 +314,12 @@ public class Launcher {
                 robot.leftLauncher.setVelocity(launcherTarget);
                 robot.rightLauncher.setVelocity(launcherTarget);
                 robot.rightLauncher.setPower(0.77);
-                if (robot.rightLauncher.getVelocity() > launcherMin && robot.rightLauncher.getVelocity() < launcherMax) {
+                if (robot.rightLauncher.getVelocity() > launcherMin  + 25 && robot.rightLauncher.getVelocity() < launcherMax) {
                     rightLaunchState = LaunchState.LAUNCH;
                 }
                 break;
             case LAUNCH:
-                robot.feeder.setPower(1);
+                robot.feeder.setPower(0.75);
                 robot.rightFeeder.setPosition(right_feeder_up);
 
                 rightFeederTimer.reset();
@@ -386,7 +375,7 @@ public class Launcher {
                 }
                 break;
             case LAUNCH:
-                robot.feeder.setPower(1);
+                robot.feeder.setPower(0.75);
                 robot.leftFeeder.setPosition(left_feeder_up);
                 leftFeederTimer.reset();
                 leftLaunchState = LaunchState.LAUNCHING;
@@ -441,7 +430,7 @@ public class Launcher {
                 }
                 break;
             case LAUNCH:
-                robot.feeder.setPower(1);
+                robot.feeder.setPower(0.75);
                 robot.leftFeeder.setPosition(left_feeder_up);
                 leftFeederTimer.reset();
                 leftLaunchState = LaunchState.LAUNCHING;
@@ -463,13 +452,9 @@ public class Launcher {
         Pose pose = robot.follower.getPose();
         //Goal Position 10,139
         if (is_blue) {
-            return Math.sqrt(
-                    (Math.pow(pose.getX() - 10,2)) + (Math.pow(pose.getY() - 139,2))
-            );
+            return new Pose(10,139).distanceFrom(robot.follower.getPose());
         } else {
-            return Math.sqrt(
-                    (Math.pow(pose.getX() - 134,2)) + (Math.pow(pose.getY() - 139,2))
-            );
+            return new Pose(134,139).distanceFrom(robot.follower.getPose());
         }
     }
 

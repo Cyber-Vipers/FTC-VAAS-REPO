@@ -80,7 +80,8 @@ public class BlueCloseAutoIteration2 extends OpMode {
     }
     public States current_state = States.Initial;
 
-    public Pose startingPose = new Pose(21.981, 124.935, Math.toRadians(135));
+    public static Pose startingPose = new Pose(21.981, 124.935, Math.toRadians(135));
+    public static Pose EndingPose;
     @Override
     public void init() {
         limelight_servo = hardwareMap.get(Servo.class, "limelightServo");
@@ -159,6 +160,7 @@ public class BlueCloseAutoIteration2 extends OpMode {
             System.out.println("An error occurred.");
             e.printStackTrace(); // Print error details
         }
+        Competition_Teleop.lastauto = Competition_Teleop.LastAutoStates.BlueClose;
     }
     @Override
     public void init_loop() {
@@ -170,6 +172,7 @@ public ElapsedTime timer = new ElapsedTime();
     public void loop() {
         follower.update(); // Update Pedro Pathing
         panelsField.update();
+        EndingPose = follower.getPose();
         double distance_left = colorleft.getDistance(DistanceUnit.CM);
         double distance_right = colorright.getDistance(DistanceUnit.CM);
         handle_divert(robotComposition,distance_right,distance_left);

@@ -23,6 +23,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Util.Robot_Composition;
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher;
+import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.Teleop.Competition_Teleop;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
 @Autonomous(name = "Blue Far Auto", group = "Autonomous")
@@ -137,8 +138,9 @@ public class BlueFarAutoIteration2 extends OpMode {
         panelsTelemetry.update(telemetry);
         intake.setDirection(DcMotorSimple.Direction.FORWARD);
         robotComposition = new Robot_Composition(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, leftLauncher, rightLauncher, intake, feeder, leftFeeder, rightFeeder,color1,color2,follower,telemetry,diverter,limelight_servo,limelight);
+        Competition_Teleop.lastauto = Competition_Teleop.LastAutoStates.BlueFar;
     }
-
+    public static Pose EndingPose;
 
     @Override
     public void loop() {
@@ -146,7 +148,7 @@ public class BlueFarAutoIteration2 extends OpMode {
         panelsField.update();
         prevent_false_shots();
         move();
-
+        EndingPose = follower.getPose();
         Launcher.spinup(robotComposition, Launcher.LauncherDistance.FAR,200);
         // Log values to Panels and Driver Station
         telemetry.addData("Current Shoot Time", shoot_timer.milliseconds());

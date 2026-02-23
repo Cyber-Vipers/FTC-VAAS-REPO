@@ -64,6 +64,11 @@ import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launche
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Limelight;
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Sphere_Operator;
 
+import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.auto.BlueCloseAutoIteration2;
+import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.auto.BlueFarAutoIteration2;
+import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.auto.Original_Iterations.Red_Close_Auto;
+import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.auto.RedCloseAutoIteration2;
+import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.auto.RedFarAutoIteration2;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 import org.firstinspires.ftc.teamcode.util.BangBangController;
 
@@ -145,8 +150,15 @@ public class Competition_Teleop extends OpMode {
     PIDFController controller;
     boolean headingLock = false;
     public static double f = 0.002;
-    public static double override_value = 0;
-
+    public static double override_value = 1200;
+    public static enum LastAutoStates {
+        BlueClose,
+        BlueFar,
+        RedFar,
+        RedClose,
+        None
+    }
+    public static LastAutoStates lastauto = LastAutoStates.None;
     /*
      * Code to run ONCE when the driver hits INIT
      */
@@ -214,6 +226,8 @@ public class Competition_Teleop extends OpMode {
          * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
          * both work to feed the ball into the robot.
          */
+
+
         follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
         controller = new PIDFController(follower.constants.coefficientsHeadingPIDF);
         follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
@@ -251,6 +265,22 @@ public class Competition_Teleop extends OpMode {
         panelsField.init();
         panelsField.setOffsets(PanelsField.INSTANCE.getPresets().getPEDRO_PATHING());
         panelsField.setStyle("red", "blue", 2.0);//fill, outline fill, outline width
+        switch (lastauto) {
+            case RedClose:
+                follower.setPose(RedCloseAutoIteration2.EndingPose);
+                break;
+            case RedFar:
+                follower.setPose(RedFarAutoIteration2.EndingPose);
+                break;
+            case BlueClose:
+                follower.setPose(BlueCloseAutoIteration2.EndingPose);
+                break;
+            case BlueFar:
+                follower.setPose(BlueFarAutoIteration2.EndingPose);
+                break;
+            case None:
+                follower.setPose(BlueCloseAutoIteration2.startingPose);
+        }
     }
 
     /*
@@ -297,7 +327,7 @@ public class Competition_Teleop extends OpMode {
     public long last_heading_swap = 0;
     public static long heading_cooldown = 0;
     public int spam_mult = 1;
-    public boolean is_blue = false;
+    public boolean is_blue = true;
     private static final FieldManager panelsField = PanelsField.INSTANCE.getField();
     public static boolean is_configuring = false;
     public static Pose blueGoalPosition = new Pose(14,130);
@@ -305,6 +335,7 @@ public class Competition_Teleop extends OpMode {
     public static Pose goalPosition = new Pose(14,130);
     public static double regression_output = 0;
     public static boolean regression_active = false;
+
 
     public static enum RegressionMode {
         Quadratic,
@@ -343,7 +374,7 @@ public class Competition_Teleop extends OpMode {
         panelsField.update();
         follower.update();
         telemetry.addData("Distance to goal", distance_to_goal(follower.getPose(),goalPosition));
-        double output = Math.max(Math.min(BangBangController.BangBangChicken(rightLauncher.getVelocity(),1300d+25d,f),1),-1);
+        double output = Math.max(Math.min(BangBangController.BangBangChicken(rightLauncher.getVelocity(),1300d+25d,f,1),1),-1);
         leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER,flywheel_tuning);
         rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER,flywheel_tuning);
         double distance_left = colorleft.getDistance(DistanceUnit.CM);

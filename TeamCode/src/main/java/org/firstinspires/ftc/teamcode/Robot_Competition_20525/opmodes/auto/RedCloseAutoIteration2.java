@@ -28,6 +28,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Util.Robot_Composition;
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher;
+import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.Teleop.Competition_Teleop;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
 
@@ -143,14 +144,16 @@ public class RedCloseAutoIteration2 extends OpMode {
         panelsTelemetry.update(telemetry);
         intake.setDirection(DcMotorSimple.Direction.FORWARD);
         robotComposition = new Robot_Composition(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, leftLauncher, rightLauncher, intake, feeder, leftFeeder, rightFeeder,color1,color2,follower,telemetry,diverter,limelight_servo,limelight);
+        Competition_Teleop.lastauto = Competition_Teleop.LastAutoStates.RedClose;
     }
-
+    public static Pose EndingPose;
     @Override
     public void loop() {
         follower.update(); // Update Pedro Pathing
         panelsField.update();
         move();
         prevent_false_shots();
+        EndingPose = follower.getPose();
         double distance_left = color1.getDistance(DistanceUnit.CM);
         double distance_right = color2.getDistance(DistanceUnit.CM);
         handle_divert(robotComposition,distance_right,distance_left);
