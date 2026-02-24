@@ -205,14 +205,12 @@ public class Launcher {
 
 
     //GET THE MAGIC NUMBERS FROM DESMOS ! ! !
-    public static double quadraticFactor1 = 3.82104;
-    public static double quadraticFactor2 = 967.9013;
-    public static double quadraticFactor3 = 1237.14761;
-
-
-    public static double quadratic_regression(Pose pose,Pose goalPosition) {
+    public static double linearFactor1 = 3.82104;
+    public static double linearFactor2 = 967.9013;
+    // public static double quadraticFactor3 = 1237.14761;
+    public static double linearRegression(Pose pose, Pose goalPosition) {
         double dist = distance_to_goal(pose,goalPosition);
-        return (quadraticFactor1*dist + quadraticFactor2) + 100;
+        return (linearFactor1 *dist + linearFactor2) + 100;
     }
     public static double quarticFactor1 = 0.000270501;
     public static double quarticFactor2 = 0.0920206;
@@ -226,11 +224,8 @@ public class Launcher {
         return Math.pow(quarticFactor1*dist,4) - Math.pow(quarticFactor2*dist,3) + Math.pow(quarticFactor3*dist,2) + quarticFactor4*dist + quarticFactor5;
     }
     public static void spam(Robot_Composition robot, LauncherDistance launcherDistance,int modifier) {
-
-        launchRight(true,robot,launcherDistance,modifier, false, 0);
         launchLeft(true,robot,launcherDistance,modifier, false, 0);
-
-
+        launchRight(true,robot,launcherDistance,modifier, false, 0);
     }
     public static void launchRight(boolean shotRequested, Robot_Composition robot,LauncherDistance launcherDistance,float modifier) {
 
@@ -259,7 +254,7 @@ public class Launcher {
             case SPIN_UP:
                 robot.leftLauncher.setVelocity(launcherTarget);
                 robot.rightLauncher.setVelocity(launcherTarget);
-                robot.rightLauncher.setPower(0.77);
+                robot.rightLauncher.setPower(1);
                 if (robot.rightLauncher.getVelocity() > launcherMin && robot.rightLauncher.getVelocity() < launcherMax) {
                     rightLaunchState = LaunchState.LAUNCH;
                 }
@@ -267,7 +262,6 @@ public class Launcher {
             case LAUNCH:
                 robot.feeder.setPower(0.75);
                 robot.rightFeeder.setPosition(right_feeder_up);
-
                 rightFeederTimer.reset();
                 rightLaunchState = LaunchState.LAUNCHING;
                 break;
@@ -313,7 +307,7 @@ public class Launcher {
             case SPIN_UP:
                 robot.leftLauncher.setVelocity(launcherTarget);
                 robot.rightLauncher.setVelocity(launcherTarget);
-                robot.rightLauncher.setPower(0.77);
+                robot.rightLauncher.setPower(1);
                 if (robot.rightLauncher.getVelocity() > launcherMin  + 25 && robot.rightLauncher.getVelocity() < launcherMax) {
                     rightLaunchState = LaunchState.LAUNCH;
                 }
@@ -369,7 +363,7 @@ public class Launcher {
             case SPIN_UP:
                 robot.leftLauncher.setVelocity(launcherTarget);
                 robot.rightLauncher.setVelocity(launcherTarget);
-                robot.rightLauncher.setPower(0.77);
+                robot.rightLauncher.setPower(1);
                 if (robot.leftLauncher.getVelocity() > launcherMin && robot.leftLauncher.getVelocity() < launcherMax) {
                     leftLaunchState = LaunchState.LAUNCH;
                 }
@@ -424,7 +418,7 @@ public class Launcher {
             case SPIN_UP:
                 robot.leftLauncher.setVelocity(launcherTarget);
                 robot.rightLauncher.setVelocity(launcherTarget);
-                robot.rightLauncher.setPower(0.77);
+                robot.rightLauncher.setPower(1);
                 if (robot.leftLauncher.getVelocity() > launcherMin && robot.leftLauncher.getVelocity() < launcherMax) {
                     leftLaunchState = LaunchState.LAUNCH;
                 }

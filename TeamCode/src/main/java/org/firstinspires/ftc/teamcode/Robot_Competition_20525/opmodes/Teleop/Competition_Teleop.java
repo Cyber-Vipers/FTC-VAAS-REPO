@@ -27,7 +27,7 @@ import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher.distance_to_goal;
 import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher.launchLeft;
 import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher.launchRight;
-import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher.quadratic_regression;
+import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher.linearRegression;
 import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Sphere_Operator.handle_divert;
 
 import com.bylazar.configurables.annotations.Configurable;
@@ -40,7 +40,6 @@ import com.bylazar.field.Style;
 import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
-import com.pedropathing.geometry.CoordinateSystem;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
@@ -66,7 +65,6 @@ import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Sphere_
 
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.auto.BlueCloseAutoIteration2;
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.auto.BlueFarAutoIteration2;
-import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.auto.Original_Iterations.Red_Close_Auto;
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.auto.RedCloseAutoIteration2;
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.auto.RedFarAutoIteration2;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
@@ -146,6 +144,7 @@ public class Competition_Teleop extends OpMode {
     // Setup a variable for each drive wheel to save power level for telemetry
     public boolean manual_override_diverter = false;
     public IMU imu;
+
     double targetHeading = Math.toRadians(180); // Radians
     PIDFController controller;
     boolean headingLock = false;
@@ -329,7 +328,7 @@ public class Competition_Teleop extends OpMode {
     public int spam_mult = 1;
     public boolean is_blue = true;
     private static final FieldManager panelsField = PanelsField.INSTANCE.getField();
-    public static boolean is_configuring = false;
+    public static boolean is_configuring = true;
     public static Pose blueGoalPosition = new Pose(14,130);
     public static Pose redGoalPosition = new Pose(130,130);
     public static Pose goalPosition = new Pose(14,130);
@@ -550,7 +549,7 @@ public class Competition_Teleop extends OpMode {
                 is_configuring = true;
                 switch (regressionMode) {
                     case Quadratic:
-                        override_value = quadratic_regression(follower.getPose(),goalPosition);
+                        override_value = linearRegression(follower.getPose(),goalPosition);
                         break;
                 }
             }
@@ -604,7 +603,7 @@ public class Competition_Teleop extends OpMode {
 
         if (regression_active) {
             is_configuring = true;
-            override_value = quadratic_regression(follower.getPose(),goalPosition);
+            override_value = linearRegression(follower.getPose(),goalPosition);
             regression_output = override_value;
         }
 
