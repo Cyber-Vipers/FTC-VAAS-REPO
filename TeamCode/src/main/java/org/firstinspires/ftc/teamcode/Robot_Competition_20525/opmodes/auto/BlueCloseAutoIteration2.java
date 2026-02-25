@@ -2,9 +2,11 @@
 package org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.auto;
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
+import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher.auto_active;
 import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher.linearRegression;
 import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Sphere_Operator.force_divert;
 import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Sphere_Operator.handle_divert;
+import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.Teleop.Competition_Teleop.flywheel_tuning;
 
 import com.bylazar.field.FieldManager;
 import com.bylazar.field.PanelsField;
@@ -76,6 +78,10 @@ public class BlueCloseAutoIteration2 extends OpMode {
         ApproachIntake2,
         Intake2,
         Shoot3,
+        PrepareIntake3,
+        ApproachIntake3,
+        Intake3,
+        Shoot4,
         Leave
     }
     public States current_state = States.Initial;
@@ -136,8 +142,8 @@ public class BlueCloseAutoIteration2 extends OpMode {
          */
 
 
-        leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
-        rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
+        leftLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheel_tuning);
+        rightLauncher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheel_tuning);
 
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
@@ -161,6 +167,7 @@ public class BlueCloseAutoIteration2 extends OpMode {
             e.printStackTrace(); // Print error details
         }
         Competition_Teleop.lastauto = Competition_Teleop.LastAutoStates.BlueClose;
+        auto_active = true;
     }
     @Override
     public void init_loop() {
@@ -175,7 +182,7 @@ public ElapsedTime timer = new ElapsedTime();
         EndingPose = follower.getPose();
         double distance_left = colorleft.getDistance(DistanceUnit.CM);
         double distance_right = colorright.getDistance(DistanceUnit.CM);
-        handle_divert(robotComposition,distance_right,distance_left);
+        handle_divert(robotComposition,distance_left,distance_right);
         move();
         prevent_false_shots();
         paths = new Paths(follower);
@@ -195,8 +202,11 @@ public ElapsedTime timer = new ElapsedTime();
     public static long fire_wait_time = 5000;
     public ElapsedTime shoot_timer = new ElapsedTime();
     public void prevent_false_shots() {
-        if (current_state != States.Shoot && current_state != States.Shoot2 && current_state != States.Shoot3) {
+        if (current_state != States.Shoot && current_state != States.Shoot2 && current_state != States.Shoot3 && current_state != States.Shoot4) {
             Launcher.shut_gates(robotComposition);
+            Launcher.noshoot = true;
+        } else {
+            Launcher.noshoot = false;
         }
     }
 
@@ -221,7 +231,7 @@ public ElapsedTime timer = new ElapsedTime();
             case Shoot:
                 follower.setMaxPower(1);
                 if (follower.atParametricEnd()) {
-                    if (shoot_timer.milliseconds() > fire_wait_time + 2000) {
+                    if (shoot_timer.milliseconds() > fire_wait_time) {
                         follower.followPath(paths.PrepareIntake);
                         current_state = States.PrepareIntake;
                     } else {
@@ -233,7 +243,7 @@ public ElapsedTime timer = new ElapsedTime();
                 break;
             case PrepareIntake:
                 if (follower.atParametricEnd()) {
-                    force_divert(robotComposition,false);
+
                     if (timer.milliseconds() >= 1200) {
                         follower.followPath(paths.Shoot);
                         current_state = States.ApproachIntake1;
@@ -278,7 +288,6 @@ public ElapsedTime timer = new ElapsedTime();
                 break;
             case PrepareIntake2:
                 if (follower.atParametricEnd()) {
-                    force_divert(robotComposition,true);
                     if (timer.milliseconds() > 1200) {
 
                         follower.followPath(paths.ApproachIntake2);
@@ -307,8 +316,42 @@ public ElapsedTime timer = new ElapsedTime();
                 follower.setMaxPower(1);
                 if (follower.atParametricEnd()) {
                     if (shoot_timer.milliseconds() > fire_wait_time) {
+                        follower.followPath(paths.PrepareIntake3);
+                        current_state = States.PrepareIntake3;
+                    } else {
+                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1200);
+                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1200);
+                    }
+                }
+                break;
+            case PrepareIntake3:
+                if (follower.atParametricEnd()) {
+                    follower.followPath(paths.ApproachIntake3);
+                    current_state = States.ApproachIntake3;
+                }
+                break;
+            case ApproachIntake3:
+                follower.setMaxPower(0.7);
+                if (follower.atParametricEnd()) {
+                    follower.followPath(paths.Intake3);
+                    current_state = States.Intake3;
+                }
+                break;
+            case Intake3:
+                if (follower.atParametricEnd()) {
+                    follower.followPath(paths.Shoot4);
+                    current_state = States.Shoot4;
+                    shoot_timer.reset();
+                    shoot_timer.startTime();
+                    current_state = States.Shoot4;
+                }
+                break;
+            case Shoot4:
+                follower.setMaxPower(1);
+                if (follower.atParametricEnd()) {
+                    if (shoot_timer.milliseconds() > fire_wait_time) {
                         follower.followPath(paths.Leave);
-                        current_state = States.Shoot3;
+                        current_state = States.Leave;
                     } else {
                         Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1200);
                         Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1200);
@@ -328,6 +371,10 @@ public ElapsedTime timer = new ElapsedTime();
         public PathChain ApproachIntake2;
         public PathChain Intake2;
         public PathChain Shoot3;
+        public PathChain PrepareIntake3;
+        public PathChain ApproachIntake3;
+        public PathChain Intake3;
+        public PathChain Shoot4;
         public PathChain Leave;
 
         public Paths(Follower follower) {
@@ -429,6 +476,46 @@ public ElapsedTime timer = new ElapsedTime();
                     ).setLinearHeadingInterpolation(Math.toRadians(shoot_degree), Math.toRadians(90))
 
                     .build();
+            PrepareIntake3 = follower.pathBuilder().addPath(
+                            new BezierLine(
+                                    new Pose(57.421, 106.542),
+
+                                    new Pose(42.168, 35.000)
+                            )
+                    ).setConstantHeadingInterpolation(Math.toRadians(intake_degree))
+
+                    .build();
+
+            ApproachIntake3 = follower.pathBuilder().addPath(
+                            new BezierLine(
+                                    new Pose(42.168, 35.000),
+
+                                    new Pose(32.299, 35.000)
+                            )
+                    ).setConstantHeadingInterpolation(Math.toRadians(intake_degree))
+
+                    .build();
+
+            Intake3 = follower.pathBuilder().addPath(
+                            new BezierLine(
+                                    new Pose(32.299, 35.000),
+
+                                    new Pose(10.561, 35.000)
+                            )
+                    ).setConstantHeadingInterpolation(Math.toRadians(intake_degree))
+
+                    .build();
+
+            Shoot4 = follower.pathBuilder().addPath(
+                            new BezierLine(
+                                    new Pose(10.561, 35.000),
+
+                                    shoot_pos
+                            )
+                    ).setLinearHeadingInterpolation(Math.toRadians(intake_degree), Math.toRadians(shoot_degree))
+
+                    .build();
+
         }
         }
     }

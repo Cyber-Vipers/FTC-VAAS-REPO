@@ -78,7 +78,7 @@ import org.firstinspires.ftc.teamcode.util.BangBangController;
 @TeleOp(name = "Competition Teleop", group = "Comp" )
 //@Disabled
 public class Competition_Teleop extends OpMode {
-    public static PIDFCoefficients flywheel_tuning = new PIDFCoefficients(500, 0, 0, 2.5);
+    public static PIDFCoefficients flywheel_tuning = new PIDFCoefficients(1000, 0, 0, 2.5);
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
 
     final double LAUNCHER_CLOSE_TARGET_VELOCITY = 1200; //in ticks/second for the close goal.
@@ -280,6 +280,8 @@ public class Competition_Teleop extends OpMode {
             case None:
                 follower.setPose(BlueCloseAutoIteration2.startingPose);
         }
+        Launcher.auto_active = true;
+        Launcher.noshoot = false;
     }
 
     /*
@@ -393,7 +395,7 @@ public class Competition_Teleop extends OpMode {
             gamepad2.rumble(100);
         }
         if (!manual_override_diverter) {
-            handle_divert(robotComposition,distance_right,distance_left);
+            handle_divert(robotComposition,distance_left,distance_right);
         }
         if (gamepad2.startWasPressed()) {
             is_blue = false;

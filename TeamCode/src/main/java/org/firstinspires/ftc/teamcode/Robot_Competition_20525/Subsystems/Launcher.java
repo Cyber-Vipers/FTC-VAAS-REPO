@@ -51,6 +51,10 @@ public class Launcher {
     public static double first_wait = 0.55;
     public static double second_wait = 0.65;
     public static double third_wait = 0.80;
+
+    public static boolean noshoot = false;
+    public static boolean auto_active = false;
+
     public static boolean delegate_shots(long wait_time, long since_stop, Robot_Composition robot, insides inside, int obelisk, LauncherDistance launcherDistance) {
             switch (inside) {
                 case PPG:
@@ -240,40 +244,76 @@ public class Launcher {
             launcherMax = LAUNCHER_CLOSE_MAX_VELOCITY + modifier;
             launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY + modifier;
         }
-
-        switch (rightLaunchState) {
-            case IDLE:
-                if (shotRequested) {
-                    robot.leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
-                    robot.rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
-                    rightLaunchState = LaunchState.SPIN_UP;
-                    robot.intake.setDirection(DcMotorSimple.Direction.FORWARD);
-                    robot.intake.setPower(1);
-                }
-                break;
-            case SPIN_UP:
-                robot.leftLauncher.setVelocity(launcherTarget);
-                robot.rightLauncher.setVelocity(launcherTarget);
-                robot.rightLauncher.setPower(1);
-                if (robot.rightLauncher.getVelocity() > launcherMin && robot.rightLauncher.getVelocity() < launcherMax) {
-                    rightLaunchState = LaunchState.LAUNCH;
-                }
-                break;
-            case LAUNCH:
-                robot.feeder.setPower(0.75);
-                robot.rightFeeder.setPosition(right_feeder_up);
-                rightFeederTimer.reset();
-                rightLaunchState = LaunchState.LAUNCHING;
-                break;
-            case LAUNCHING:
-                if (rightFeederTimer.seconds() > FEED_TIME_SECONDS) {
-                    robot.feeder.setPower(0);
-                    rightLaunchState = LaunchState.IDLE;
-                    robot.rightFeeder.setPosition(right_feeder_block);
-                }
-                robot.right_inside = null;
-                break;
+        if (!noshoot && auto_active) {
+            switch (rightLaunchState) {
+                case IDLE:
+                    if (shotRequested) {
+                        robot.leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
+                        robot.rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
+                        rightLaunchState = LaunchState.SPIN_UP;
+                        robot.intake.setDirection(DcMotorSimple.Direction.FORWARD);
+                        robot.intake.setPower(1);
+                    }
+                    break;
+                case SPIN_UP:
+                    robot.leftLauncher.setVelocity(launcherTarget);
+                    robot.rightLauncher.setVelocity(launcherTarget);
+                    robot.rightLauncher.setPower(1);
+                    if (robot.rightLauncher.getVelocity() > launcherMin && robot.rightLauncher.getVelocity() < launcherMax) {
+                        rightLaunchState = LaunchState.LAUNCH;
+                    }
+                    break;
+                case LAUNCH:
+                    robot.feeder.setPower(0.5);
+                    robot.rightFeeder.setPosition(right_feeder_up);
+                    rightFeederTimer.reset();
+                    rightLaunchState = LaunchState.LAUNCHING;
+                    break;
+                case LAUNCHING:
+                    if (rightFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                        robot.feeder.setPower(0);
+                        rightLaunchState = LaunchState.IDLE;
+                        robot.rightFeeder.setPosition(right_feeder_block);
+                    }
+                    robot.right_inside = null;
+                    break;
+            }
+        } else if (!auto_active){
+            switch (rightLaunchState) {
+                case IDLE:
+                    if (shotRequested) {
+                        robot.leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
+                        robot.rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
+                        rightLaunchState = LaunchState.SPIN_UP;
+                        robot.intake.setDirection(DcMotorSimple.Direction.FORWARD);
+                        robot.intake.setPower(1);
+                    }
+                    break;
+                case SPIN_UP:
+                    robot.leftLauncher.setVelocity(launcherTarget);
+                    robot.rightLauncher.setVelocity(launcherTarget);
+                    robot.rightLauncher.setPower(1);
+                    if (robot.rightLauncher.getVelocity() > launcherMin && robot.rightLauncher.getVelocity() < launcherMax) {
+                        rightLaunchState = LaunchState.LAUNCH;
+                    }
+                    break;
+                case LAUNCH:
+                    robot.feeder.setPower(0.5);
+                    robot.rightFeeder.setPosition(right_feeder_up);
+                    rightFeederTimer.reset();
+                    rightLaunchState = LaunchState.LAUNCHING;
+                    break;
+                case LAUNCHING:
+                    if (rightFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                        robot.feeder.setPower(0);
+                        rightLaunchState = LaunchState.IDLE;
+                        robot.rightFeeder.setPosition(right_feeder_block);
+                    }
+                    robot.right_inside = null;
+                    break;
+            }
         }
+
     }
 
     public static void launchRight(boolean shotRequested, Robot_Composition robot,LauncherDistance launcherDistance,float modifier,boolean overide, double override_value) {
@@ -294,6 +334,7 @@ public class Launcher {
             launcherMax = override_value + 50;
         }
 
+        if (!noshoot && auto_active) {
         switch (rightLaunchState) {
             case IDLE:
                 if (shotRequested) {
@@ -313,7 +354,7 @@ public class Launcher {
                 }
                 break;
             case LAUNCH:
-                robot.feeder.setPower(0.75);
+                robot.feeder.setPower(0.5);
                 robot.rightFeeder.setPosition(right_feeder_up);
 
                 rightFeederTimer.reset();
@@ -327,7 +368,42 @@ public class Launcher {
                 }
                 robot.right_inside = null;
                 break;
+        }} else if (!auto_active) {
+            switch (rightLaunchState) {
+                case IDLE:
+                    if (shotRequested) {
+                        robot.leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
+                        robot.rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
+                        rightLaunchState = LaunchState.SPIN_UP;
+                        robot.intake.setDirection(DcMotorSimple.Direction.FORWARD);
+                        robot.intake.setPower(1);
+                    }
+                    break;
+                case SPIN_UP:
+                    robot.leftLauncher.setVelocity(launcherTarget);
+                    robot.rightLauncher.setVelocity(launcherTarget);
+                    robot.rightLauncher.setPower(1);
+                    if (robot.rightLauncher.getVelocity() > launcherMin  + 25 && robot.rightLauncher.getVelocity() < launcherMax) {
+                        rightLaunchState = LaunchState.LAUNCH;
+                    }
+                    break;
+                case LAUNCH:
+                    robot.feeder.setPower(0.5);
+                    robot.rightFeeder.setPosition(right_feeder_up);
+
+                    rightFeederTimer.reset();
+                    rightLaunchState = LaunchState.LAUNCHING;
+                    break;
+                case LAUNCHING:
+                    if (rightFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                        robot.feeder.setPower(0);
+                        rightLaunchState = LaunchState.IDLE;
+                        robot.rightFeeder.setPosition(right_feeder_block);
+                    }
+                    robot.right_inside = null;
+                    break;
         }
+    }
     }
     public static void launchLeft(boolean shotRequested, Robot_Composition robot,LauncherDistance launcherDistance, float modifier, boolean overide, double override_value) {
         if (last_left_speed > robot.leftLauncher.getVelocity() - 200) {
@@ -349,7 +425,7 @@ public class Launcher {
             launcherMin = override_value - 25;
             launcherMax = override_value + 25;
         }
-
+        if (!noshoot && auto_active) {
         switch (leftLaunchState) {
             case IDLE:
                 if (shotRequested) {
@@ -369,7 +445,7 @@ public class Launcher {
                 }
                 break;
             case LAUNCH:
-                robot.feeder.setPower(0.75);
+                robot.feeder.setPower(0.5);
                 robot.leftFeeder.setPosition(left_feeder_up);
                 leftFeederTimer.reset();
                 leftLaunchState = LaunchState.LAUNCHING;
@@ -383,6 +459,42 @@ public class Launcher {
                 }
                 robot.left_inside = null;
                 break;
+        }
+        } else if (!auto_active) {
+            switch (leftLaunchState) {
+                case IDLE:
+                    if (shotRequested) {
+                        robot.leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
+                        robot.rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
+                        leftLaunchState = LaunchState.SPIN_UP;
+                        robot.intake.setDirection(DcMotorSimple.Direction.FORWARD);
+                        robot.intake.setPower(1);
+                    }
+                    break;
+                case SPIN_UP:
+                    robot.leftLauncher.setVelocity(launcherTarget);
+                    robot.rightLauncher.setVelocity(launcherTarget);
+                    robot.rightLauncher.setPower(1);
+                    if (robot.leftLauncher.getVelocity() > launcherMin && robot.leftLauncher.getVelocity() < launcherMax) {
+                        leftLaunchState = LaunchState.LAUNCH;
+                    }
+                    break;
+                case LAUNCH:
+                    robot.feeder.setPower(0.5);
+                    robot.leftFeeder.setPosition(left_feeder_up);
+                    leftFeederTimer.reset();
+                    leftLaunchState = LaunchState.LAUNCHING;
+                    break;
+                case LAUNCHING:
+                    if (leftFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                        robot.feeder.setPower(0);
+                        leftLaunchState = LaunchState.IDLE;
+                        robot.leftFeeder.setPosition(left_feeder_block);
+
+                    }
+                    robot.left_inside = null;
+                    break;
+            }
         }
     }
 
@@ -404,40 +516,76 @@ public class Launcher {
             launcherMax = LAUNCHER_CLOSE_MAX_VELOCITY + modifier;
             launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY + modifier;
         }
+        if (!noshoot && auto_active) {
+            switch (leftLaunchState) {
+                case IDLE:
+                    if (shotRequested) {
+                        robot.leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
+                        robot.rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
+                        leftLaunchState = LaunchState.SPIN_UP;
+                        robot.intake.setDirection(DcMotorSimple.Direction.FORWARD);
+                        robot.intake.setPower(1);
+                    }
+                    break;
+                case SPIN_UP:
+                    robot.leftLauncher.setVelocity(launcherTarget);
+                    robot.rightLauncher.setVelocity(launcherTarget);
+                    robot.rightLauncher.setPower(1);
+                    if (robot.leftLauncher.getVelocity() > launcherMin && robot.leftLauncher.getVelocity() < launcherMax) {
+                        leftLaunchState = LaunchState.LAUNCH;
+                    }
+                    break;
+                case LAUNCH:
+                    robot.feeder.setPower(0.5);
+                    robot.leftFeeder.setPosition(left_feeder_up);
+                    leftFeederTimer.reset();
+                    leftLaunchState = LaunchState.LAUNCHING;
+                    break;
+                case LAUNCHING:
+                    if (leftFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                        robot.feeder.setPower(0);
+                        leftLaunchState = LaunchState.IDLE;
+                        robot.leftFeeder.setPosition(left_feeder_block);
 
-        switch (leftLaunchState) {
-            case IDLE:
-                if (shotRequested) {
-                    robot.leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
-                    robot.rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
-                    leftLaunchState = LaunchState.SPIN_UP;
-                    robot.intake.setDirection(DcMotorSimple.Direction.FORWARD);
-                    robot.intake.setPower(1);
-                }
-                break;
-            case SPIN_UP:
-                robot.leftLauncher.setVelocity(launcherTarget);
-                robot.rightLauncher.setVelocity(launcherTarget);
-                robot.rightLauncher.setPower(1);
-                if (robot.leftLauncher.getVelocity() > launcherMin && robot.leftLauncher.getVelocity() < launcherMax) {
-                    leftLaunchState = LaunchState.LAUNCH;
-                }
-                break;
-            case LAUNCH:
-                robot.feeder.setPower(0.75);
-                robot.leftFeeder.setPosition(left_feeder_up);
-                leftFeederTimer.reset();
-                leftLaunchState = LaunchState.LAUNCHING;
-                break;
-            case LAUNCHING:
-                if (leftFeederTimer.seconds() > FEED_TIME_SECONDS) {
-                    robot.feeder.setPower(0);
-                    leftLaunchState = LaunchState.IDLE;
-                    robot.leftFeeder.setPosition(left_feeder_block);
+                    }
+                    robot.left_inside = null;
+                    break;
+            }
+        } else if (!auto_active) {
+            switch (leftLaunchState) {
+                case IDLE:
+                    if (shotRequested) {
+                        robot.leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
+                        robot.rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
+                        leftLaunchState = LaunchState.SPIN_UP;
+                        robot.intake.setDirection(DcMotorSimple.Direction.FORWARD);
+                        robot.intake.setPower(1);
+                    }
+                    break;
+                case SPIN_UP:
+                    robot.leftLauncher.setVelocity(launcherTarget);
+                    robot.rightLauncher.setVelocity(launcherTarget);
+                    robot.rightLauncher.setPower(1);
+                    if (robot.leftLauncher.getVelocity() > launcherMin && robot.leftLauncher.getVelocity() < launcherMax) {
+                        leftLaunchState = LaunchState.LAUNCH;
+                    }
+                    break;
+                case LAUNCH:
+                    robot.feeder.setPower(0.5);
+                    robot.leftFeeder.setPosition(left_feeder_up);
+                    leftFeederTimer.reset();
+                    leftLaunchState = LaunchState.LAUNCHING;
+                    break;
+                case LAUNCHING:
+                    if (leftFeederTimer.seconds() > FEED_TIME_SECONDS) {
+                        robot.feeder.setPower(0);
+                        leftLaunchState = LaunchState.IDLE;
+                        robot.leftFeeder.setPosition(left_feeder_block);
 
-                }
-                robot.left_inside = null;
-                break;
+                    }
+                    robot.left_inside = null;
+                    break;
+            }
         }
     }
 
