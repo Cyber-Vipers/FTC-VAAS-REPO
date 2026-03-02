@@ -40,6 +40,7 @@ import com.bylazar.field.Style;
 import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.ftc.InvertedFTCCoordinates;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
@@ -155,12 +156,14 @@ public class Competition_Teleop extends OpMode {
         BlueFar,
         RedFar,
         RedClose,
-        None
+        None,
+        Teleop
     }
     public static LastAutoStates lastauto = LastAutoStates.None;
     /*
      * Code to run ONCE when the driver hits INIT
      */
+
     @Override
     public void init() {
         telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
@@ -181,14 +184,14 @@ public class Competition_Teleop extends OpMode {
         colorleft = hardwareMap.get(Rev2mDistanceSensor.class, "color2");
         colorright = hardwareMap.get(Rev2mDistanceSensor.class, "color1");
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        imu = hardwareMap.get(IMU.class, "imu");
-
+        leftFeeder.setDirection(Servo.Direction.REVERSE);
+        rightFeeder.setDirection(Servo.Direction.REVERSE);
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
          * because the axles point in opposite directions. Pushing the left stick forward
          * MUST make robot go forward. So adjust these two lines based on your first test drive.
          * Note: The settings here assume direct drive on left and right wheels. Gear
-         * Reduction or 90 Deg drives may require direction flips
+         * Reduction or 90 Deg drives may requirgae direction flips
          */
         leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
         rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
@@ -266,9 +269,11 @@ public class Competition_Teleop extends OpMode {
         panelsField.setStyle("red", "blue", 2.0);//fill, outline fill, outline width
         switch (lastauto) {
             case RedClose:
+                is_blue = false;
                 follower.setPose(RedCloseAutoIteration2.EndingPose);
                 break;
             case RedFar:
+                is_blue = false;
                 follower.setPose(RedFarAutoIteration2.EndingPose);
                 break;
             case BlueClose:
@@ -278,8 +283,13 @@ public class Competition_Teleop extends OpMode {
                 follower.setPose(BlueFarAutoIteration2.EndingPose);
                 break;
             case None:
-                follower.setPose(BlueCloseAutoIteration2.startingPose);
+                regression_active = false;
+                follower.setPose(startingPose);
+            case Teleop:
+                follower.setPose(EndingPose);
         }
+        lastauto = LastAutoStates.Teleop;
+
         Launcher.auto_active = true;
         Launcher.noshoot = false;
     }
@@ -335,12 +345,14 @@ public class Competition_Teleop extends OpMode {
     public static Pose redGoalPosition = new Pose(130,130);
     public static Pose goalPosition = new Pose(14,130);
     public static double regression_output = 0;
-    public static boolean regression_active = false;
+    public static boolean regression_active = true;
 
 
     public static enum RegressionMode {
         Quadratic,
     }
+
+    public static Pose EndingPose = new Pose(0,0);
 
     public static RegressionMode regressionMode = RegressionMode.Quadratic;
     public void draw(Pose pose, Style style) {
@@ -360,6 +372,7 @@ public class Competition_Teleop extends OpMode {
         panelsField.line(x2, y2);
         sendPacket();
     }
+    public boolean human_loading = false;
 
     private static final Style robotLook = new Style(
             "", "#3F51B5", 0.0
@@ -370,6 +383,7 @@ public class Competition_Teleop extends OpMode {
     @Override
     public void loop() {
         looptime.startTime();
+        EndingPose = follower.getPose();
         telemetry.addData("Position", follower.getPose());
         draw(follower.getPose(),robotLook);
         panelsField.update();
@@ -381,13 +395,18 @@ public class Competition_Teleop extends OpMode {
         double distance_left = colorleft.getDistance(DistanceUnit.CM);
         double distance_right = colorright.getDistance(DistanceUnit.CM);
         panelsField.moveCursor(follower.getPose().getX(), follower.getPose().getY());
-
+        if (headingLock) {
+            if (is_blue) {
+                targetHeading = Math.toRadians(Limelight.target_apriltag(robotComposition,20));
+            } else {
+                targetHeading = Math.toRadians(Limelight.target_apriltag(robotComposition,24));
+            }
+        }
         if (rightLauncher.getVelocity() >= Launcher.launcherTarget) {
             gamepad1.setLedColor(0,1,0,100);
         }
         if (gamepad2.a) {
-            manual_override_diverter = true;
-            gamepad2.rumble(100);
+            relocalize();
         }
         if (gamepad2.b) {
             gamepad2.rumble(100);
@@ -397,15 +416,21 @@ public class Competition_Teleop extends OpMode {
         if (!manual_override_diverter) {
             handle_divert(robotComposition,distance_left,distance_right);
         }
-        if (gamepad2.startWasPressed()) {
+        if (gamepad1.startWasPressed()) {
             is_blue = false;
-            goalPosition = redGoalPosition;;
         }
-        if (gamepad2.shareWasPressed()) {
+        if (gamepad1.shareWasPressed()) {
             is_blue = true;
-            goalPosition = blueGoalPosition;
+
         }
-        if (gamepad2.rightStickButtonWasPressed()) {
+
+        if (is_blue == true) {
+            goalPosition = blueGoalPosition;
+        } else {
+            goalPosition = redGoalPosition;
+        }
+
+        if (gamepad2.right_stick_button) {
             if (headingLock && last_heading_swap + heading_cooldown < System.currentTimeMillis()) {
                 gamepad2.rumble(100);
                 gamepad2.rumble(100);
@@ -421,9 +446,12 @@ public class Competition_Teleop extends OpMode {
             }
 
         }
+
+
         if (gamepad2.x) {
             gamepad2.setLedColor(1,0,0,100);
             headingLock = false;
+
         }
 
 //        if (gamepad2.startWasPressed()) {
@@ -483,18 +511,20 @@ public class Competition_Teleop extends OpMode {
 //        }
 
 
-        if (gamepad1.right_bumper) {
+        if (gamepad1.rightBumperWasPressed()) {
             if (last_dis_change + dist_wait <= System.currentTimeMillis()) {
                 if (launcherDistance == Launcher.LauncherDistance.FAR) {
                     gamepad1.rumble(100);
                     launcherDistance = Launcher.LauncherDistance.CLOSE;
                     launcherTarget = LAUNCHER_CLOSE_TARGET_VELOCITY;
+                    override_value = 1250;
                     launcherMin = LAUNCHER_CLOSE_MIN_VELOCITY;
                     gamepad1.rumble(100);
                 } else {
                     gamepad1.rumble(100);
                     launcherDistance = Launcher.LauncherDistance.FAR;
                     launcherTarget = LAUNCHER_FAR_TARGET_VELOCITY;
+                    override_value = 1350;
                     launcherMin = LAUNCHER_FAR_MIN_VELOCITY;
                 }
                 last_dis_change = System.currentTimeMillis();
@@ -516,28 +546,27 @@ public class Competition_Teleop extends OpMode {
         }
         // HUMAN PLAYER LOAD
         telemetry.addData("RIGHT LAUNCHER DIRECTION", rightLauncher.getDirection());
+        if (gamepad2.y) {
+            regression_active = false;
+        }
         if (gamepad2.dpadLeftWasPressed()) {
-            if (leftLauncher.getDirection() == DcMotorSimple.Direction.REVERSE) {
-                leftLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
-                rightLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
-                leftLauncher.setPower(-1);
-                rightLauncher.setPower(-1);
-                leftLauncher.setVelocity(0);
-                rightLauncher.setVelocity(0);
+            if (!human_loading) {
                 leftLauncher.setVelocity(-launcherTarget);
                 rightLauncher.setVelocity(-launcherTarget);
+                human_loading = true;
+                Launcher.open_gates(robotComposition);
             } else {
+                Launcher.shut_gates(robotComposition);
                 leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
                 rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
                 leftLauncher.setVelocity(launcherTarget);
                 rightLauncher.setVelocity(launcherTarget);
+                human_loading = false;
             }
+        }
 
-        }
-        if (gamepad2.y) {
-            relocalize();
-        }
         if (gamepad1.yWasPressed()) {
+            human_loading = false;
             leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
             rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
             if (is_configuring) {
@@ -558,10 +587,21 @@ public class Competition_Teleop extends OpMode {
 
         } else if (gamepad1.bWasPressed()) {
             // stop flywheel
+            human_loading = false;
             leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE   );
             rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
             leftLauncher.setVelocity(STOP_SPEED);
             rightLauncher.setVelocity(STOP_SPEED);
+        }
+        if (gamepad1.rightStickButtonWasPressed()) {
+            if (is_blue){
+                follower.setPose(new Pose(134,9,90));
+
+
+            } else {
+                follower.setPose(new Pose(9,9,90));
+            }
+
         }
         if (gamepad1.xWasPressed()) {
             intakeState = IntakeState.OFF;
@@ -582,7 +622,7 @@ public class Competition_Teleop extends OpMode {
                     break;
             }
         }
-        if (gamepad1.left_bumper) {
+        if (gamepad1.leftBumperWasPressed()) {
             if (last_divert_time + divert_cooldown < System.currentTimeMillis()) {
                 switch (diverterDirection) {
                     case LEFT:
@@ -599,6 +639,7 @@ public class Competition_Teleop extends OpMode {
         }
 
 
+
         /*
          * Now we call our "Launch" function.
          */
@@ -611,6 +652,10 @@ public class Competition_Teleop extends OpMode {
 
         telemetry.addData("Is configuring?", is_configuring);
         telemetry.addData("Regression Output", regression_output);
+        if (gamepad1.dpadLeftWasPressed() || gamepad1.dpadRightWasPressed()) {
+            human_loading = false;
+        }
+
         launchLeft(gamepad1.dpadLeftWasPressed(),robotComposition,launcherDistance,0,is_configuring,override_value);
         launchRight(gamepad1.dpadRightWasPressed(),robotComposition,launcherDistance,0,is_configuring,override_value);
         if (gamepad1.dpad_up) {
@@ -660,7 +705,7 @@ public class Competition_Teleop extends OpMode {
             Pose pose = new Pose();
             LLResult result = limelight.getLatestResult();
 
-            double robotYaw = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.XYX, AngleUnit.RADIANS).firstAngle;
+            double robotYaw = follower.getHeading();
             limelight.updateRobotOrientation(robotYaw);
             telemetry.addData("Is Result Valid", result.isValid());
             for (LLResultTypes.FiducialResult fiducialResult : limelight.getLatestResult().getFiducialResults()) {
@@ -668,15 +713,13 @@ public class Competition_Teleop extends OpMode {
                 telemetry.addData("X", poser.getPosition().x);
                 telemetry.addData("Y", poser.getPosition().y);
                 if (result.isValid()) {
-                    Pose3D botpose_mt2 = result.getBotpose_MT2();
-                    if (botpose_mt2 != null) {
-                        double x = poser.getPosition().toUnit(DistanceUnit.INCH).x;
-                        double y = poser.getPosition().toUnit(DistanceUnit.INCH).y;
+                        double x = poser.getPosition().x;
+                        double y = poser.getPosition().y;
                         double heading = poser.getOrientation().getYaw(AngleUnit.RADIANS);
                         telemetry.addData("MT2 Location:", "(" + x + ", " + y + ")");
                         pose = getRobotPoseFromCamera(x, y,heading);
+
                         telemetry.addData("GUESSED LOCATION", pose);
-                    }
                 }
             }
 
@@ -687,7 +730,9 @@ public class Competition_Teleop extends OpMode {
         //Fill this out to get the robot Pose from the camera's output (apply any filters if you need to using follower.getPose() for fusion)
         //Pedro Pathing has built-in KalmanFilter and LowPassFilter classes you can use for this
         //Use this to convert standard FTC coordinates to standard Pedro Pathing coordinates
-        return new Pose(x, y, heading, FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
+        Pose thought_pose = new Pose(x, y, heading, FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
+
+        return thought_pose;
     }
     public double getHeadingError() {
         return MathFunctions.getTurnDirection(follower.getPose().getHeading(), targetHeading) * MathFunctions.getSmallestAngleDifference(follower.getPose().getHeading(), targetHeading);

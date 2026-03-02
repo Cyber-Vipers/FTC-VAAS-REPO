@@ -54,8 +54,8 @@ public class RuntOdometryWheelsConstants {
     public static PathConstraints pathConstraints = new PathConstraints(
             0.99,
             100,
-            2.5,
-            8 // originally 2
+            0.25,
+            0.75 // originally 2
     );
 
     public static Follower createFollower(HardwareMap hardwareMap) {

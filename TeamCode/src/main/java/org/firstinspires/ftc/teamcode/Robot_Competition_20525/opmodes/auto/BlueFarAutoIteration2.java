@@ -7,6 +7,7 @@ import com.bylazar.field.PanelsField;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
@@ -61,12 +62,13 @@ public class BlueFarAutoIteration2 extends OpMode {
     public enum States {
         Initial,
         Shoot,
-        Pickup1,
-        Backpick,
-        Pickup2,
-        Backpick2,
-        Pickup3,
-        Shoot2
+        ApproachIntake,
+        Intake,
+        Shoot2,
+        ApproachIntake2,
+        IntakeSide,
+        Tangent,
+        Leave
     }
     public States current_state = States.Initial;
 
@@ -139,8 +141,21 @@ public class BlueFarAutoIteration2 extends OpMode {
         intake.setDirection(DcMotorSimple.Direction.FORWARD);
         robotComposition = new Robot_Composition(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, leftLauncher, rightLauncher, intake, feeder, leftFeeder, rightFeeder,color1,color2,follower,telemetry,diverter,limelight_servo,limelight);
         Competition_Teleop.lastauto = Competition_Teleop.LastAutoStates.BlueFar;
+
+    }
+
+    @Override
+    public void start() {
+        endTimer.reset();
+        endTimer.startTime();
     }
     public static Pose EndingPose;
+    public static ElapsedTime endTimer = new ElapsedTime();
+    public static Pose shoot_pos = new Pose(54.430, 13.570);
+    public static double shoot_heading = 105;
+    public static double intake_heading = 180;
+    public static double down_bad_intake_heading = 270;
+
 
     @Override
     public void loop() {
@@ -171,178 +186,183 @@ public class BlueFarAutoIteration2 extends OpMode {
     public void prevent_false_shots() {
         if (current_state != States.Shoot && current_state != States.Shoot2) {
             Launcher.shut_gates(robotComposition);
+            Launcher.noshoot = true;
+        } else {
+            Launcher.noshoot = false;
         }
     }
 
     public void move() {
+        if (endTimer.seconds() > 28 && current_state != States.Leave) {
+            follower.followPath(paths.Leave);
+            current_state = States.Leave;
+        }
         switch(current_state){
             case Initial:
-                if(shoot_timer.milliseconds() >= 1000) {
-                    intake.setPower(1);
-                    follower.followPath(paths.Shoot);
-                    current_state = States.Shoot;
-                    shoot_timer.reset();
-                    shoot_timer.startTime();
+                follower.followPath(paths.Shoot);
+                current_state = States.Shoot;
+                shoot_timer.reset();
+                shoot_timer.startTime();
+                break;
+            case Shoot2:
+                if (follower.atParametricEnd()) {
+
+
+                if (shoot_timer.milliseconds() >= fire_wait_time) {
+                    current_state = States.ApproachIntake2;
+                    follower.followPath(paths.ApproachIntake2);
+                } else {
+                    Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.FAR,0,true,1350);
+                    Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.FAR,0,true,1350);
+                }
+                } else {
+                        shoot_timer.reset();
+                        shoot_timer.startTime();
                 }
                 break;
             case Shoot:
                 if (follower.atParametricEnd()) {
-                    robotComposition.feeder.setPower(1);
-                    if (shoot_timer.milliseconds() > fire_wait_time + 2000) {
-                        follower.followPath(paths.Pickup1);
-                        current_state = States.Pickup1;
+                    if (shoot_timer.milliseconds() >= fire_wait_time) {
+                        current_state = States.ApproachIntake;
+                        follower.followPath(paths.ApproachIntake);
                     } else {
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.60) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.50) {
-                            Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.40) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.40) {
-                            Launcher.spam(robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
+                        Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0, true, 1350);
+                        Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.FAR, 0, true, 1350);
                     }
-                }
-                break;
-            case Backpick2:
-                if (follower.atParametricEnd()) {
-                    follower.followPath(paths.Pickup3);
-                    current_state = States.Pickup3;
+                } else {
                     shoot_timer.reset();
                     shoot_timer.startTime();
                 }
                 break;
-            case Pickup3:
+            case ApproachIntake:
                 if (follower.atParametricEnd()) {
+                    follower.setMaxPower(0.7);
+                    current_state = States.Intake;
+                    follower.followPath(paths.Intake);
+
+                }
+                break;
+            case Intake:
+                shoot_timer.reset();
+                shoot_timer.startTime();
+                if (follower.atParametricEnd()) {
+                    follower.setMaxPower(1);
                     follower.followPath(paths.Shoot2);
                     current_state = States.Shoot2;
                 }
-            case Backpick:
-                if(follower.atParametricEnd()){
-                    follower.followPath(paths.Pickup2);
-                    current_state = States.Pickup2;
-                    shoot_timer.reset();
-                    shoot_timer.startTime();
-                }
                 break;
-            case Pickup1:
+            case IntakeSide:
+                shoot_timer.reset();
+                shoot_timer.startTime();
                 if (follower.atParametricEnd()) {
-                    follower.followPath(paths.Backpick);
-                    current_state = States.Backpick;
+                    follower.followPath(paths.Shoot2);
+                    current_state = States.Shoot2;
                     shoot_timer.reset();
                     shoot_timer.startTime();
                 }
-            case Pickup2:
+            case ApproachIntake2:
                 if (follower.atParametricEnd()) {
-                    follower.followPath(paths.Backpick2);
-                    current_state = States.Backpick2;
-                    shoot_timer.reset();
-                    shoot_timer.startTime();
+                    follower.followPath(paths.IntakeSide);
+                    current_state = States.IntakeSide;
                 }
-            case Shoot2:
-                if(follower.atParametricEnd()){
-                    robotComposition.feeder.setPower(1);
-                    if(shoot_timer.milliseconds() > fire_wait_time) {
-                        break;
-                    } else{
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.90) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.70) {
-                            Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.60) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.10) {
-                            Launcher.spam(robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
-                    }
+            case Leave:
+                if (follower.atParametricEnd() || follower.getCurrentPathChain() != paths.Leave) {
+                    stop();
                 }
-                break;
+
         }
     }
 
 
     public static class Paths {
         public PathChain Shoot;
-        public PathChain Pickup1;
-        public PathChain Backpick;
-        public PathChain Pickup2;
-        public PathChain Backpick2;
+        public PathChain ApproachIntake;
+        public PathChain Intake;
         public PathChain Shoot2;
-        public PathChain Pickup3;
+        public PathChain ApproachIntake2;
+        public PathChain IntakeSide;
+        public PathChain Tangent;
+        public PathChain Leave;
 
         public Paths(Follower follower) {
             Shoot = follower.pathBuilder().addPath(
                             new BezierLine(
                                     new Pose(56.000, 8.000),
 
-                                    new Pose(57.6, 15.2)
+                                    shoot_pos
                             )
-                    ).setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(110))
+                    ).setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(shoot_heading))
 
                     .build();
 
-            Pickup1 = follower.pathBuilder().addPath(
+            ApproachIntake = follower.pathBuilder().addPath(
                             new BezierLine(
-                                    new Pose(57.6, 15.2),
+                                    shoot_pos,
 
-                                    new Pose(5.551, 9.720)
+                                    new Pose(50.813, 37.224)
                             )
-                    ).setLinearHeadingInterpolation(Math.toRadians(110), Math.toRadians(180))
+                    ).setLinearHeadingInterpolation(Math.toRadians(shoot_heading), Math.toRadians(intake_heading))
 
                     .build();
 
-            Backpick = follower.pathBuilder().addPath(
+            Intake = follower.pathBuilder().addPath(
                             new BezierLine(
-                                    new Pose(5.551, 9.720),
+                                    new Pose(50.813, 37.224),
 
-                                    new Pose(15.187, 10.187)
+                                    new Pose(16.047, 37.224)
                             )
-                    ).setConstantHeadingInterpolation(Math.toRadians(180))
-
-                    .build();
-
-            Pickup2 = follower.pathBuilder().addPath(
-                            new BezierLine(
-                                    new Pose(15.187, 10.187),
-
-                                    new Pose(5.551, 9.720)
-                            )
-                    ).setConstantHeadingInterpolation(Math.toRadians(180))
-
-                    .build();
-            Backpick2 = follower.pathBuilder().addPath(
-                            new BezierLine(
-                                    new Pose(5.551, 9.720),
-
-                                    new Pose(15.187, 10.187)
-                            )
-                    ).setConstantHeadingInterpolation(Math.toRadians(180))
-
-                    .build();
-
-            Pickup3 = follower.pathBuilder().addPath(
-                            new BezierLine(
-                                    new Pose(15.187, 10.187),
-
-                                    new Pose(5.551, 9.720)
-                            )
-                    ).setConstantHeadingInterpolation(Math.toRadians(180))
+                    ).setConstantHeadingInterpolation(Math.toRadians(intake_heading))
 
                     .build();
 
             Shoot2 = follower.pathBuilder().addPath(
                             new BezierLine(
-                                    new Pose(10.551, 9.720),
+                                    new Pose(16.047, 37.224),
 
-                                    new Pose(57.6, 15.2)
+                                    new Pose(54.430, 13.570)
                             )
-                    ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(110))
+                    ).setLinearHeadingInterpolation(Math.toRadians(intake_heading), Math.toRadians(shoot_heading))
+
+                    .build();
+
+            ApproachIntake2 = follower.pathBuilder().addPath(
+                            new BezierCurve(
+                                    new Pose(54.430, 13.570),
+                                    new Pose(22.986, 31.682),
+                                    new Pose(43.463, 25.159),
+                                    new Pose(18.981, 27.327)
+                            )
+                    ).setLinearHeadingInterpolation(Math.toRadians(shoot_heading), Math.toRadians(down_bad_intake_heading))
+
+                    .build();
+
+            IntakeSide = follower.pathBuilder().addPath(
+                            new BezierLine(
+                                    new Pose(18.981, 27.327),
+
+                                    new Pose(18.981, 11.178)
+                            )
+                    ).setConstantHeadingInterpolation(Math.toRadians(down_bad_intake_heading))
+
+                    .build();
+
+            Tangent = follower.pathBuilder().addPath(
+                            new BezierLine(
+                                    new Pose(18.981, 11.178),
+
+                                    shoot_pos
+                            )
+                    ).setLinearHeadingInterpolation(Math.toRadians(down_bad_intake_heading), Math.toRadians(shoot_heading))
+
+                    .build();
+
+            Leave = follower.pathBuilder().addPath(
+                            new BezierLine(
+                                    shoot_pos,
+
+                                    new Pose(54.346, 44.981)
+                            )
+                    ).setLinearHeadingInterpolation(Math.toRadians(shoot_heading), Math.toRadians(90))
 
                     .build();
         }

@@ -18,10 +18,10 @@ public class Launcher {
     public static double last_right_speed = 0;
     public static double last_left_speed = 0;
     public static double FEED_TIME_SECONDS = 1.0;
-    public static double left_feeder_block = 0.25;
-    public static double right_feeder_block = 0.5;
+    public static double left_feeder_block = 0.3;
+    public static double right_feeder_block = 0.65;
     public static double right_feeder_up = 0;
-    public static double left_feeder_up = 0.5;
+    public static double left_feeder_up = 1;
     public static double LAUNCHER_FAR_MAX_VELOCITY = 1490;
     public static double LAUNCHER_FAR_TARGET_VELOCITY = 1450; //Target velocity for far goal
     public static double LAUNCHER_FAR_MIN_VELOCITY = 1425; //minimum required to start a shot for far goal.
@@ -186,6 +186,12 @@ public class Launcher {
         robot.leftFeeder.setPosition(left_feeder_block);
         robot.rightFeeder.setPosition(right_feeder_block);
     }
+    public static void open_gates(Robot_Composition robot) {
+        robot.leftFeeder.setPosition(left_feeder_up);
+        robot.rightFeeder.setPosition(right_feeder_up);
+    }
+    
+    public static double feeder_speed = 0.55;
 
     public static void spinup(Robot_Composition robot, LauncherDistance launcherDistance, int modifier) {
         if (launcherDistance.equals(LauncherDistance.FAR)) {
@@ -214,7 +220,7 @@ public class Launcher {
     // public static double quadraticFactor3 = 1237.14761;
     public static double linearRegression(Pose pose, Pose goalPosition) {
         double dist = distance_to_goal(pose,goalPosition);
-        return (linearFactor1 *dist + linearFactor2) + 100;
+        return (linearFactor1 *dist + linearFactor2);
     }
     public static double quarticFactor1 = 0.000270501;
     public static double quarticFactor2 = 0.0920206;
@@ -264,8 +270,9 @@ public class Launcher {
                     }
                     break;
                 case LAUNCH:
-                    robot.feeder.setPower(0.5);
                     robot.rightFeeder.setPosition(right_feeder_up);
+                    robot.feeder.setPower(feeder_speed);
+
                     rightFeederTimer.reset();
                     rightLaunchState = LaunchState.LAUNCHING;
                     break;
@@ -298,8 +305,9 @@ public class Launcher {
                     }
                     break;
                 case LAUNCH:
-                    robot.feeder.setPower(0.5);
                     robot.rightFeeder.setPosition(right_feeder_up);
+                    robot.feeder.setPower(feeder_speed);
+
                     rightFeederTimer.reset();
                     rightLaunchState = LaunchState.LAUNCHING;
                     break;
@@ -354,7 +362,7 @@ public class Launcher {
                 }
                 break;
             case LAUNCH:
-                robot.feeder.setPower(0.5);
+                robot.feeder.setPower(feeder_speed);
                 robot.rightFeeder.setPosition(right_feeder_up);
 
                 rightFeederTimer.reset();
@@ -388,8 +396,9 @@ public class Launcher {
                     }
                     break;
                 case LAUNCH:
-                    robot.feeder.setPower(0.5);
                     robot.rightFeeder.setPosition(right_feeder_up);
+                    robot.feeder.setPower(feeder_speed);
+
 
                     rightFeederTimer.reset();
                     rightLaunchState = LaunchState.LAUNCHING;
@@ -445,8 +454,9 @@ public class Launcher {
                 }
                 break;
             case LAUNCH:
-                robot.feeder.setPower(0.5);
                 robot.leftFeeder.setPosition(left_feeder_up);
+                robot.feeder.setPower(feeder_speed);
+
                 leftFeederTimer.reset();
                 leftLaunchState = LaunchState.LAUNCHING;
                 break;
@@ -480,8 +490,9 @@ public class Launcher {
                     }
                     break;
                 case LAUNCH:
-                    robot.feeder.setPower(0.5);
                     robot.leftFeeder.setPosition(left_feeder_up);
+                    robot.feeder.setPower(feeder_speed);
+
                     leftFeederTimer.reset();
                     leftLaunchState = LaunchState.LAUNCHING;
                     break;
@@ -536,7 +547,7 @@ public class Launcher {
                     }
                     break;
                 case LAUNCH:
-                    robot.feeder.setPower(0.5);
+                    robot.feeder.setPower(feeder_speed);
                     robot.leftFeeder.setPosition(left_feeder_up);
                     leftFeederTimer.reset();
                     leftLaunchState = LaunchState.LAUNCHING;
@@ -571,8 +582,9 @@ public class Launcher {
                     }
                     break;
                 case LAUNCH:
-                    robot.feeder.setPower(0.5);
                     robot.leftFeeder.setPosition(left_feeder_up);
+                    robot.feeder.setPower(feeder_speed);
+
                     leftFeederTimer.reset();
                     leftLaunchState = LaunchState.LAUNCHING;
                     break;

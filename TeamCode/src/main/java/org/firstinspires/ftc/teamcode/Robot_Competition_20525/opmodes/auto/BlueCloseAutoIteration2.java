@@ -10,6 +10,7 @@ import static org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.Tel
 
 import com.bylazar.field.FieldManager;
 import com.bylazar.field.PanelsField;
+import com.pedropathing.geometry.BezierCurve;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -136,7 +137,8 @@ public class BlueCloseAutoIteration2 extends OpMode {
         rightBackDrive.setZeroPowerBehavior(BRAKE);
         leftLauncher.setZeroPowerBehavior(BRAKE);
         rightLauncher.setZeroPowerBehavior(BRAKE);
-
+        rightFeeder.setDirection(Servo.Direction.REVERSE);
+        leftFeeder.setDirection(Servo.Direction.REVERSE);
         /*
          * set Feeders to an initial value to initialize the servo controller
          */
@@ -155,17 +157,6 @@ public class BlueCloseAutoIteration2 extends OpMode {
         panelsTelemetry.debug("Status", "Initialized");
         panelsTelemetry.update(telemetry);
         robotComposition = new Robot_Composition(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, leftLauncher, rightLauncher, intake, feeder, leftFeeder, rightFeeder,colorright,colorleft,follower,telemetry,diverter,limelight_servo,limelight);
-        try {
-            File myObj = new File("side.txt"); // Create File object
-            if (myObj.createNewFile()) {           // Try to create the file
-                System.out.println("File created: " + myObj.getName());
-            } else {
-                System.out.println("File already exists.");
-            }
-        } catch (IOException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace(); // Print error details
-        }
         Competition_Teleop.lastauto = Competition_Teleop.LastAutoStates.BlueClose;
         auto_active = true;
     }
@@ -235,8 +226,8 @@ public ElapsedTime timer = new ElapsedTime();
                         follower.followPath(paths.PrepareIntake);
                         current_state = States.PrepareIntake;
                     } else {
-                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1200);
-                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1200);
+                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
+                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
                     }
                 }
                 timer.reset();
@@ -280,8 +271,8 @@ public ElapsedTime timer = new ElapsedTime();
                         follower.followPath(paths.PrepareIntake2);
                         current_state = States.PrepareIntake2;
                     } else {
-                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1200);
-                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1200);
+                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
+                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
                     }
                 }
                 timer.reset();
@@ -319,8 +310,8 @@ public ElapsedTime timer = new ElapsedTime();
                         follower.followPath(paths.PrepareIntake3);
                         current_state = States.PrepareIntake3;
                     } else {
-                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1200);
-                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1200);
+                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
+                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
                     }
                 }
                 break;
@@ -353,8 +344,8 @@ public ElapsedTime timer = new ElapsedTime();
                         follower.followPath(paths.Leave);
                         current_state = States.Leave;
                     } else {
-                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1200);
-                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1200);
+                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
+                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
                     }
                 }
                 break;
@@ -509,9 +500,9 @@ public ElapsedTime timer = new ElapsedTime();
             Shoot4 = follower.pathBuilder().addPath(
                             new BezierLine(
                                     new Pose(10.561, 35.000),
-
                                     shoot_pos
                             )
+
                     ).setLinearHeadingInterpolation(Math.toRadians(intake_degree), Math.toRadians(shoot_degree))
 
                     .build();

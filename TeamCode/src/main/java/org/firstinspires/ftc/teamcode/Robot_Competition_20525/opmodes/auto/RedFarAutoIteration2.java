@@ -1,10 +1,13 @@
 package org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.auto;
 
+import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
+
 import com.bylazar.field.FieldManager;
 import com.bylazar.field.PanelsField;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
@@ -12,20 +15,21 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.*;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Util.Robot_Composition;
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Subsystems.Launcher;
 import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.Teleop.Competition_Teleop;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
-import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
-
 @Autonomous(name = "Red Far Auto", group = "Autonomous")
 public class RedFarAutoIteration2 extends OpMode {
-    public static double shoot_degree = Math.toRadians(147);
-    public static double intake_degree = Math.toRadians(186);
-    public static Pose shoot_pos = new Pose(57.42056074766355,106.54205607476636,Math.toRadians(shoot_degree));
+
 
 
 
@@ -53,22 +57,22 @@ public class RedFarAutoIteration2 extends OpMode {
     public Robot_Composition robotComposition;
     private TelemetryManager panelsTelemetry; // Panels Telemetry instance
     public Follower follower; // Pedro Pathing follower instance
-    private RedFarAutoIteration2.Paths paths; // Paths defined in the Paths class
+    private Paths paths; // Paths defined in the Paths class
 
     public enum States {
         Initial,
         Shoot,
-        Pickup1,
-        Backpick,
-        Pickup2,
-        Backpick2,
-        Pickup3,
+        ApproachIntake,
+        Intake,
         Shoot2,
-        Shoot3
+        ApproachIntake2,
+        IntakeSide,
+        Tangent,
+        Leave
     }
     public States current_state = States.Initial;
 
-    public Pose startingPose = new Pose(88, 8, Math.toRadians(135));
+    public Pose startingPose = new Pose(88, 8, Math.toRadians(90));
     @Override
     public void init() {
         limelight_servo = hardwareMap.get(Servo.class, "limelightServo");
@@ -130,21 +134,35 @@ public class RedFarAutoIteration2 extends OpMode {
         follower = RuntOdometryWheelsConstants.createFollower(hardwareMap);
         follower.setStartingPose(startingPose);
 
-        paths = new RedFarAutoIteration2.Paths(follower); // Build paths
+        paths = new Paths(follower); // Build paths
 
         panelsTelemetry.debug("Status", "Initialized");
         panelsTelemetry.update(telemetry);
         intake.setDirection(DcMotorSimple.Direction.FORWARD);
         robotComposition = new Robot_Composition(leftFrontDrive, rightFrontDrive, leftBackDrive, rightBackDrive, leftLauncher, rightLauncher, intake, feeder, leftFeeder, rightFeeder,color1,color2,follower,telemetry,diverter,limelight_servo,limelight);
-        Competition_Teleop.lastauto = Competition_Teleop.LastAutoStates.RedFar;
+        Competition_Teleop.lastauto = Competition_Teleop.LastAutoStates.BlueFar;
+
+    }
+
+    @Override
+    public void start() {
+        endTimer.reset();
+        endTimer.startTime();
     }
     public static Pose EndingPose;
+    public static ElapsedTime endTimer = new ElapsedTime();
+    public static Pose shoot_pos = new Pose(89.57, 13.570);
+    public static double shoot_heading = 75;
+    public static double intake_heading = 0;
+    public static double down_bad_intake_heading = 270;
+
+
     @Override
     public void loop() {
         follower.update(); // Update Pedro Pathing
         panelsField.update();
-        move();
         prevent_false_shots();
+        move();
         EndingPose = follower.getPose();
         Launcher.spinup(robotComposition, Launcher.LauncherDistance.FAR,200);
         // Log values to Panels and Driver Station
@@ -159,177 +177,139 @@ public class RedFarAutoIteration2 extends OpMode {
         panelsTelemetry.debug("Y", follower.getPose().getY());
         panelsTelemetry.debug("Heading", follower.getPose().getHeading());
         telemetry.update();
-
         panelsTelemetry.update(telemetry);
 
     }
 
-    public static long fire_wait_time = 2500;
+    public static long fire_wait_time = 4500;
     public ElapsedTime shoot_timer = new ElapsedTime();
     public void prevent_false_shots() {
-        if (current_state != States.Shoot && current_state != States.Shoot2 && current_state != States.Shoot3) {
+        if (current_state != States.Shoot && current_state != States.Shoot2) {
             Launcher.shut_gates(robotComposition);
+            Launcher.noshoot = true;
+        } else {
+            Launcher.noshoot = false;
         }
     }
 
     public void move() {
+        if (endTimer.seconds() > 28 && current_state != States.Leave) {
+            follower.followPath(paths.Leave);
+            current_state = States.Leave;
+        }
         switch(current_state){
             case Initial:
-                if(shoot_timer.milliseconds() >= 1000) {
-                    intake.setPower(1);
-                    follower.followPath(paths.Shoot);
-                    current_state = States.Shoot;
+                follower.followPath(paths.Shoot);
+                current_state = States.Shoot;
+                shoot_timer.reset();
+                shoot_timer.startTime();
+                break;
+            case Shoot2:
+                if (follower.atParametricEnd()) {
+
+
+                    if (shoot_timer.milliseconds() >= fire_wait_time) {
+                        current_state = States.ApproachIntake2;
+                        follower.followPath(paths.ApproachIntake2);
+                    } else {
+                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.FAR,0,true,1350);
+                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.FAR,0,true,1350);
+                    }
+                } else {
                     shoot_timer.reset();
                     shoot_timer.startTime();
                 }
                 break;
             case Shoot:
                 if (follower.atParametricEnd()) {
-                    robotComposition.feeder.setPower(1);
-                    if (shoot_timer.milliseconds() > fire_wait_time + 2000) {
-                        follower.followPath(paths.Pickup1);
-                        current_state = States.Pickup1;
+                    if (shoot_timer.milliseconds() >= fire_wait_time) {
+                        current_state = States.ApproachIntake;
+                        follower.followPath(paths.ApproachIntake);
                     } else {
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.90) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.80) {
-                            Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.70) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.60) {
-                            Launcher.spam(robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
+                        Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0, true, 1350);
+                        Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.FAR, 0, true, 1350);
                     }
-                }
-                break;
-            case Backpick2:
-                if (follower.atParametricEnd()) {
-                    follower.followPath(paths.Pickup3);
-                    current_state = States.Pickup3;
+                } else {
                     shoot_timer.reset();
                     shoot_timer.startTime();
                 }
                 break;
-            case Pickup3:
+            case ApproachIntake:
                 if (follower.atParametricEnd()) {
+                    follower.setMaxPower(0.7);
+                    current_state = States.Intake;
+                    follower.followPath(paths.Intake);
+
+                }
+                break;
+            case Intake:
+                shoot_timer.reset();
+                shoot_timer.startTime();
+                if (follower.atParametricEnd()) {
+                    follower.setMaxPower(1);
                     follower.followPath(paths.Shoot2);
                     current_state = States.Shoot2;
                 }
-            case Backpick:
-                if(follower.atParametricEnd()){
-                    follower.followPath(paths.Pickup2);
-                    current_state = States.Pickup2;
-                    shoot_timer.reset();
-                    shoot_timer.startTime();
-                }
                 break;
-            case Pickup1:
+            case IntakeSide:
+                shoot_timer.reset();
+                shoot_timer.startTime();
                 if (follower.atParametricEnd()) {
-                    follower.followPath(paths.Backpick);
-                    current_state = States.Backpick;
+                    follower.followPath(paths.Shoot2);
+                    current_state = States.Shoot2;
                     shoot_timer.reset();
                     shoot_timer.startTime();
                 }
-            case Pickup2:
+            case ApproachIntake2:
                 if (follower.atParametricEnd()) {
-                    follower.followPath(paths.Backpick2);
-                    current_state = States.Backpick2;
-                    shoot_timer.reset();
-                    shoot_timer.startTime();
+                    follower.followPath(paths.IntakeSide);
+                    current_state = States.IntakeSide;
                 }
-            case Shoot2:
-                if(follower.atParametricEnd()){
-                    robotComposition.feeder.setPower(1);
-                    if(shoot_timer.milliseconds() > fire_wait_time) {
-                        break;
-                    } else{
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.90) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.70) {
-                            Launcher.launchLeft(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.60) {
-                            Launcher.launchRight(true, robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
-                        if (shoot_timer.milliseconds() > fire_wait_time * 0.10) {
-                            Launcher.spam(robotComposition, Launcher.LauncherDistance.FAR, 0);
-                        }
-                    }
+            case Leave:
+                if (follower.atParametricEnd() || follower.getCurrentPathChain() != paths.Leave) {
+                    stop();
                 }
-                break;
+
         }
     }
 
 
     public static class Paths {
         public PathChain Shoot;
-        public PathChain Pickup1;
-        public PathChain Backpick;
-        public PathChain Backpick2;
-        public PathChain Pickup3;
-        public PathChain Pickup2;
+        public PathChain ApproachIntake;
+        public PathChain Intake;
         public PathChain Shoot2;
+        public PathChain ApproachIntake2;
+        public PathChain IntakeSide;
+        public PathChain Tangent;
+        public PathChain Leave;
 
         public Paths(Follower follower) {
             Shoot = follower.pathBuilder().addPath(
                             new BezierLine(
                                     new Pose(88.000, 8.000),
 
-                                    new Pose(83.393, 17.383)
+                                    new Pose(89.570, 13.570)
                             )
-                    ).setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(55))
+                    ).setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(75))
 
                     .build();
 
-            Pickup1 = follower.pathBuilder().addPath(
+            ApproachIntake = follower.pathBuilder().addPath(
                             new BezierLine(
-                                    new Pose(83.393, 17.383),
+                                    new Pose(89.570, 13.570),
 
-                                    new Pose(133.449, 9.720)
+                                    new Pose(93.187, 37.224)
                             )
-                    ).setLinearHeadingInterpolation(Math.toRadians(55), Math.toRadians(0))
+                    ).setLinearHeadingInterpolation(Math.toRadians(75), Math.toRadians(0))
 
                     .build();
 
-            Backpick = follower.pathBuilder().addPath(
+            Intake = follower.pathBuilder().addPath(
                             new BezierLine(
-                                    new Pose(133.449, 9.720),
+                                    new Pose(93.187, 37.224),
 
-                                    new Pose(128.813, 10.187)
-                            )
-                    ).setConstantHeadingInterpolation(Math.toRadians(0))
-
-                    .build();
-
-            Backpick2 = follower.pathBuilder().addPath(
-                            new BezierLine(
-                                    new Pose(133.449, 9.720),
-
-                                    new Pose(128.813, 10.187)
-                            )
-                    ).setConstantHeadingInterpolation(Math.toRadians(0))
-
-                    .build();
-
-            Pickup2 = follower.pathBuilder().addPath(
-                            new BezierLine(
-                                    new Pose(128.813, 10.187),
-
-                                    new Pose(133.449, 9.720)
-                            )
-                    ).setConstantHeadingInterpolation(Math.toRadians(0))
-
-                    .build();
-
-            Pickup3 = follower.pathBuilder().addPath(
-                            new BezierLine(
-                                    new Pose(128.813, 10.187),
-
-                                    new Pose(133.449, 9.720)
+                                    new Pose(127.953, 37.224)
                             )
                     ).setConstantHeadingInterpolation(Math.toRadians(0))
 
@@ -337,14 +317,58 @@ public class RedFarAutoIteration2 extends OpMode {
 
             Shoot2 = follower.pathBuilder().addPath(
                             new BezierLine(
-                                    new Pose(133.449, 9.720),
+                                    new Pose(127.953, 37.224),
 
-                                    new Pose(82.841, 17.421)
+                                    new Pose(89.570, 13.570)
                             )
-                    ).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(55))
+                    ).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(75))
+
+                    .build();
+
+            ApproachIntake2 = follower.pathBuilder().addPath(
+                            new BezierCurve(
+                                    new Pose(89.570, 13.570),
+                                    new Pose(121.014, 31.682),
+                                    new Pose(100.537, 25.159),
+                                    new Pose(125.019, 27.327)
+                            )
+                    ).setLinearHeadingInterpolation(Math.toRadians(75), Math.toRadians(-90))
+
+                    .build();
+
+            IntakeSide = follower.pathBuilder().addPath(
+                            new BezierLine(
+                                    new Pose(125.019, 27.327),
+
+                                    new Pose(125.019, 11.178)
+                            )
+                    ).setConstantHeadingInterpolation(Math.toRadians(-90))
+
+                    .build();
+
+            Tangent = follower.pathBuilder().addPath(
+                            new BezierLine(
+                                    new Pose(125.019, 11.178),
+
+                                    new Pose(89.570, 13.570)
+                            )
+                    ).setLinearHeadingInterpolation(Math.toRadians(-90), Math.toRadians(75))
+
+                    .build();
+            Leave = follower.pathBuilder().addPath(
+                            new BezierLine(
+                                    shoot_pos,
+
+                                    new Pose(88, 44.981)
+                            )
+                    ).setLinearHeadingInterpolation(Math.toRadians(shoot_heading), Math.toRadians(90))
 
                     .build();
         }
     }
+
+
+
+
 
 }

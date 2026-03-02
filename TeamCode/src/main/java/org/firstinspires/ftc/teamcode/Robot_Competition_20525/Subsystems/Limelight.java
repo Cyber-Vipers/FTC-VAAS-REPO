@@ -9,6 +9,8 @@ import org.firstinspires.ftc.teamcode.Robot_Competition_20525.Util.Robot_Composi
 @Configurable
 public class Limelight {
 
+    public static double heading_offset = -30;
+
     public static double target_apriltag(Robot_Composition robot, int apriltag_id) {
         Limelight.look_up(robot);
         Limelight3A limelight = robot.limelight3A;
@@ -19,7 +21,7 @@ public class Limelight {
                 double ty = result.getTy();
                 double ta = result.getTa();
 
-                double target_heading = Math.toDegrees(Math.toRadians(tx) + robot.follower.getHeading());
+                double target_heading = Math.toDegrees(robot.follower.getHeading()-Math.toRadians(tx)) + heading_offset;
                 return target_heading;
             }
         }
