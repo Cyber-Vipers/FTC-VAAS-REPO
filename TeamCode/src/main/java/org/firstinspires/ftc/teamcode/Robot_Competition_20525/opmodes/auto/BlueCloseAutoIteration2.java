@@ -13,6 +13,7 @@ import com.bylazar.field.PanelsField;
 import com.pedropathing.geometry.BezierCurve;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.bylazar.configurables.annotations.Configurable;
@@ -43,10 +44,12 @@ import java.io.IOException;
 //todo fix heading
 @Autonomous(name = "Blue Close Auto", group = "Autonomous")
 @Configurable // Panels
+@Disabled
 public class BlueCloseAutoIteration2 extends OpMode {
-    public static double shoot_degree = 147;
+    public static double shoot_degree = 144;
     public static double intake_degree = 174;
-    public static Pose shoot_pos = new Pose(57.42056074766355,106.54205607476636,Math.toRadians(shoot_degree));
+    public static Pose original_pos = new Pose(56,129.4,Math.toRadians(shoot_degree));
+    public static Pose shoot_pos = new Pose(55.42056074766355,106.54205607476636,Math.toRadians(shoot_degree));
     private static final FieldManager panelsField = PanelsField.INSTANCE.getField();
     private DcMotor leftFrontDrive = null;
     private DcMotor rightFrontDrive = null;
@@ -226,8 +229,8 @@ public ElapsedTime timer = new ElapsedTime();
                         follower.followPath(paths.PrepareIntake);
                         current_state = States.PrepareIntake;
                     } else {
-                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
-                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
+                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 30);
+                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 30);
                     }
                 }
                 timer.reset();
@@ -267,12 +270,12 @@ public ElapsedTime timer = new ElapsedTime();
             case Shoot2:
                 follower.setMaxPower(1);
                 if (follower.atParametricEnd()) {
-                    if (shoot_timer.milliseconds() > fire_wait_time) {
+                    if (shoot_timer.milliseconds() > fire_wait_time + 100) {
                         follower.followPath(paths.PrepareIntake2);
                         current_state = States.PrepareIntake2;
                     } else {
-                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
-                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
+                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 40);
+                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 40);
                     }
                 }
                 timer.reset();
@@ -310,8 +313,8 @@ public ElapsedTime timer = new ElapsedTime();
                         follower.followPath(paths.PrepareIntake3);
                         current_state = States.PrepareIntake3;
                     } else {
-                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
-                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
+                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 40);
+                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 40);
                     }
                 }
                 break;
@@ -344,8 +347,8 @@ public ElapsedTime timer = new ElapsedTime();
                         follower.followPath(paths.Leave);
                         current_state = States.Leave;
                     } else {
-                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
-                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
+                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 40);
+                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 40);
                     }
                 }
                 break;

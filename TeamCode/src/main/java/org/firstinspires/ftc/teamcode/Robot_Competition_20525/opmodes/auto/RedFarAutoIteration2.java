@@ -14,6 +14,7 @@ import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -28,6 +29,7 @@ import org.firstinspires.ftc.teamcode.Robot_Competition_20525.opmodes.Teleop.Com
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.RuntOdometryWheelsConstants;
 
 @Autonomous(name = "Red Far Auto", group = "Autonomous")
+@Disabled
 public class RedFarAutoIteration2 extends OpMode {
 
 
@@ -90,6 +92,8 @@ public class RedFarAutoIteration2 extends OpMode {
         color1 = hardwareMap.get(Rev2mDistanceSensor.class,"color2");
         color2 = hardwareMap.get(Rev2mDistanceSensor.class, "color1");
         limelight = hardwareMap.get(Limelight3A.class,"limelight");
+        leftFeeder.setDirection(Servo.Direction.REVERSE);
+        rightFeeder.setDirection(Servo.Direction.REVERSE);
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
          * because the axles point in opposite directions. Pushing the left stick forward

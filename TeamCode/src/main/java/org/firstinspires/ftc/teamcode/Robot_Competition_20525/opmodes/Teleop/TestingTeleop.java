@@ -43,6 +43,7 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -70,6 +71,7 @@ import java.util.function.Supplier;
  * This file includes a teleop (driver-controlled) file for the goBILDA® Robot in 3 Days for the
  * 2025-2026 FIRST® Tech Challenge season DECODE™!
  */
+@Disabled
 @Configurable
 @TeleOp(name = "Testing Teleop", group = "Comp" )
 //@Disabled

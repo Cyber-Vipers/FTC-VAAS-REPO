@@ -13,6 +13,7 @@ import com.bylazar.field.PanelsField;
 import com.pedropathing.geometry.BezierCurve;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.bylazar.configurables.annotations.Configurable;
@@ -43,6 +44,7 @@ import java.io.IOException;
 //todo fix heading
 @Autonomous(name = "Red Close Auto", group = "Autonomous")
 @Configurable // Panels
+@Disabled
 public class RedCloseAutoIteration2 extends OpMode {
     public static double shoot_degree = 33;
     public static double intake_degree = 0;
@@ -205,7 +207,6 @@ public class RedCloseAutoIteration2 extends OpMode {
 
     public ElapsedTime initial_wait = new ElapsedTime();
     public void move() {
-        EndingPose = follower.getPose();
         regression_value = linearRegression(follower.getPose(),goalPosition);
         switch (current_state) {
             case Initial:
@@ -227,8 +228,8 @@ public class RedCloseAutoIteration2 extends OpMode {
                         follower.followPath(paths.PrepareIntake);
                         current_state = States.PrepareIntake;
                     } else {
-                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
-                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
+                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 30);
+                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 30);
                     }
                 }
                 timer.reset();
@@ -268,12 +269,12 @@ public class RedCloseAutoIteration2 extends OpMode {
             case Shoot2:
                 follower.setMaxPower(1);
                 if (follower.atParametricEnd()) {
-                    if (shoot_timer.milliseconds() > fire_wait_time) {
+                    if (shoot_timer.milliseconds() > fire_wait_time + 100) {
                         follower.followPath(paths.PrepareIntake2);
                         current_state = States.PrepareIntake2;
                     } else {
-                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
-                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
+                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 40);
+                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 40);
                     }
                 }
                 timer.reset();
@@ -311,8 +312,8 @@ public class RedCloseAutoIteration2 extends OpMode {
                         follower.followPath(paths.PrepareIntake3);
                         current_state = States.PrepareIntake3;
                     } else {
-                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
-                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
+                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 40);
+                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 40);
                     }
                 }
                 break;
@@ -345,8 +346,8 @@ public class RedCloseAutoIteration2 extends OpMode {
                         follower.followPath(paths.Leave);
                         current_state = States.Leave;
                     } else {
-                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
-                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,1250);
+                        Launcher.launchRight(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 40);
+                        Launcher.launchLeft(true,robotComposition, Launcher.LauncherDistance.CLOSE,0,true,Launcher.linearRegression(follower.getPose(),Competition_Teleop.blueGoalPosition) + 40);
                     }
                 }
                 break;

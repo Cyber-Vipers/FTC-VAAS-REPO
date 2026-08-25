@@ -37,7 +37,7 @@ public class Sphere_Operator {
     public static void handle_divert(Robot_Composition robot,double left_sensed_distance, double right_sensed_distance) {
         robot.telemetry.addData("Left Distance", Math.round(left_sensed_distance));
         robot.telemetry.addData("Right Distance", Math.round(right_sensed_distance));
-        if (!(forcing_divert && System.currentTimeMillis() + last_forced_divert > force_divert_time)) {
+        if (!(forcing_divert && System.currentTimeMillis() + last_forced_divert > force_divert_time) || System.currentTimeMillis() + last_forced_divert > force_divert_time) {
             forcing_divert = false;
             boolean left_condition = left_sensed_distance <= left_distance;
             boolean right_condition = right_sensed_distance <= right_distance;
