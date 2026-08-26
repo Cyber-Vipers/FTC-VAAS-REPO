@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
 @Configurable
@@ -21,7 +21,7 @@ public class outreachRobotTeleop extends OpMode {
      * Motors
      */
     public static DcMotorEx frontLeft, frontRight, backLeft, backRight;
-    public static DcMotor extension;
+    public static DcMotorEx extension;
     /**
      * Custom ArmPose Class
      */
@@ -31,12 +31,15 @@ public class outreachRobotTeleop extends OpMode {
     public static Servo baseRotator;
     public static Servo armRotator;
     public static Servo clawRotator;
+
     public static boolean extensionPosLock = false;
     public static double clawOpenPosition = 0.5;
     public long lastLockTime = 0;
     public double lockCooldown = 0.1;
     public static double extensionMoveScale = 100;
-    public static double armRotaterMultiplier = 0.2;
+    public static double armRotaterMultiplier = 0.02;
+    public static double baseRotatorMultiplier = 0.02;
+    public static double clawRotatorMultiplier = 0.02;
     public static double armRotaterPosition = 0;
     public static double baseRotatorPosition = 0;
     public static double clawRotationPosition = 0;
@@ -44,10 +47,14 @@ public class outreachRobotTeleop extends OpMode {
 
     public static double extensionPosition = 0;
 
+    public PIDFCoefficients extensionCoefficients = new PIDFCoefficients(1,0,1,1);
+
+    public static PIDFCoefficients changedExtensionCoefficients = new PIDFCoefficients(1,0,1,1);
+
     @Override
     public void init() {
         claw = hardwareMap.get(Servo.class, "claw");
-        extension = hardwareMap.get(DcMotor.class, "extension");
+        extension = hardwareMap.get(DcMotorEx.class, "extension");
         baseRotator = hardwareMap.get(Servo.class, "baseRotator");
         armRotator = hardwareMap.get(Servo.class, "armRotator");
         clawRotator = hardwareMap.get(Servo.class, "clawRotator");
@@ -57,6 +64,8 @@ public class outreachRobotTeleop extends OpMode {
         backRight = hardwareMap.get(DcMotorEx.class,"backRight");
         extension.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         extension.setDirection(DcMotor.Direction.REVERSE);
+        extension.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER,extensionCoefficients);
+        changedExtensionCoefficients = extensionCoefficients;
         logArmPositions();
     }
     @Override
@@ -66,7 +75,6 @@ public class outreachRobotTeleop extends OpMode {
         controls();
         logArmPositions();
         moveToGiven();
-
         telemetry.update();
     }
 
@@ -83,7 +91,12 @@ public class outreachRobotTeleop extends OpMode {
         }
         if (extensionPosition != extension.getCurrentPosition()) {
             extension.setTargetPosition((int) extensionPosition);
+            extension.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             extension.setPower(1);
+        }
+        if (!extensionCoefficients.equals(changedExtensionCoefficients)) {
+            extension.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER,changedExtensionCoefficients);
+            extensionCoefficients = changedExtensionCoefficients;
         }
 
 
@@ -109,11 +122,11 @@ public class outreachRobotTeleop extends OpMode {
         return claw.getPosition() == clawOpenPosition;
     }
     public void preventExtensionOverheat() {
-        if (Math.abs(extension.getTargetPosition() - extension.getCurrentPosition())  < 10) {
-            extension.setTargetPosition(extension.getCurrentPosition());
-            extension.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            extension.setPower(0);
-        }
+//        if (Math.abs(extension.getTargetPosition() - extension.getCurrentPosition())  < 10) {
+//            extension.setTargetPosition(extension.getCurrentPosition());
+//            extension.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//            extension.setPower(0);
+//        }
     }
     public void moveClaw() {
         if (isClawOpen()) {
@@ -133,6 +146,8 @@ public class outreachRobotTeleop extends OpMode {
      *  Right JoyStick = Rotate
      *  Left Bumper = Reset Pose to last saved pose and then Move to pos
      *  Driver 2
+     *  DPAD Up/Down = Move Life
+     *  Dpad Left/Right = Rotate Claw
      *  A = Move Claw
      *  Right Bumper = Save Current Arm Position
      *  Left Bumper = Lock Extension
@@ -158,15 +173,17 @@ public class outreachRobotTeleop extends OpMode {
         }
         if (Math.abs(gamepad2.left_stick_x) > 0.1) {
             baseRotator.setPosition(baseRotator.getPosition() + gamepad2.left_stick_x);
-            baseRotatorPosition = baseRotator.getPosition() + gamepad2.left_stick_x;
+            baseRotatorPosition = baseRotator.getPosition() + (gamepad2.left_stick_x * baseRotatorMultiplier);
         }
-        if (Math.abs(gamepad2.left_stick_y) > 0.1) {
-            armRotator.setPosition(armRotator.getPosition() + (gamepad2.left_stick_y * armRotaterMultiplier));
-            armRotaterPosition = armRotator.getPosition() + (gamepad2.left_stick_y * armRotaterMultiplier);
+        if (gamepad2.dpad_up || gamepad2.dpad_down) {
+            double value = toGamepadInput(gamepad2.dpad_up, gamepad2.dpad_down);
+            armRotator.setPosition(armRotator.getPosition() + (value * armRotaterMultiplier));
+            armRotaterPosition = armRotator.getPosition() + (value * armRotaterMultiplier);
         }
-        if (Math.abs(gamepad2.right_stick_x) > 0.1) {
-            clawRotator.setPosition(clawRotator.getPosition() + gamepad2.right_stick_x);
-            clawRotationPosition = clawRotator.getPosition() + gamepad2.right_stick_x;
+        if (gamepad2.dpad_left || gamepad2.dpad_right) {
+            double value = toGamepadInput(gamepad2.dpad_left, gamepad2.dpad_right);
+            clawRotator.setPosition(clawRotator.getPosition() + value);
+            clawRotationPosition = clawRotator.getPosition() + (value * clawRotatorMultiplier);
         }
         if (gamepad2.left_bumper) {
             if (lastLockTime + lockCooldown * 1000 <= System.currentTimeMillis()) {
@@ -221,7 +238,21 @@ public class outreachRobotTeleop extends OpMode {
         }
     }
 
+    public double toGamepadInput(boolean negative, boolean positive) {
+        double neg = 0;
+        if (negative) {
+            neg = -1;
+        }
+        double pos = boolToDouble(positive);
+        return neg + pos;
+    }
 
+    public double boolToDouble(boolean bool) {
+        if (bool) {
+            return 1;
+        }
+        return 0;
+    }
     /**
      * Controls the Drive Train
      * THANK YOU GM0
