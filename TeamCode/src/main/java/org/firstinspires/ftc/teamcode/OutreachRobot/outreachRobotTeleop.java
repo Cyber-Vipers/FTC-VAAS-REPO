@@ -36,7 +36,7 @@ public class outreachRobotTeleop extends OpMode {
     public static double clawOpenPosition = 0.5;
     public long lastLockTime = 0;
     public double lockCooldown = 0.1;
-    public static double extensionMoveScale = 50;
+    public static double extensionMoveScale = 1;
     public static double armRotaterMultiplier = 0.02;
     public static double baseRotatorMultiplier = 0.02;
     public static double clawRotatorMultiplier = 0.02;
