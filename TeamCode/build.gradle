@@ -14,13 +14,14 @@
 // Include common definitions from above.
 buildscript {
     repositories {
+        google()
         mavenCentral()
         maven {
             url "https://repo.dairy.foundation/releases"
         }
     }
     dependencies {
-        classpath "dev.frozenmilk:Load:0.2.4"
+        classpath "dev.frozenmilk:Load:0.3.0"
     }
 }
 apply from: '../build.common.gradle'
@@ -37,13 +38,23 @@ android {
     packagingOptions {
         jniLibs.useLegacyPackaging true
     }
+    sourceSets {
+        main {
+            java {
+                exclude 'org/firstinspires/ftc/teamcode/Decode'
+            }
+        }
+    }
 }
+
+
 
 dependencies {
     implementation project(':FtcRobotController')
     implementation 'org.apache.commons:commons-math3:3.6.1'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.22.2'
     implementation 'com.acmerobotics.roadrunner:core:0.5.6'
-    implementation "com.bylazar:docs:1.0.3"
-    implementation 'com.bylazar:fullpanels:1.0.4'
+    implementation "com.bylazar:docs:1.0.5"
+    implementation 'com.bylazar:fullpanels:1.0.12'
+
 }

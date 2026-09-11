@@ -4,10 +4,6 @@ import com.bylazar.configurables.annotations.Configurable;
 
 public class BangBangController {
 
-
-
-
-
     //current heading , target heading, value
 
     public static double BangBangChicken(double cur, double vel,double f,double max_power){
