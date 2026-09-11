@@ -56,5 +56,9 @@ dependencies {
     implementation 'com.acmerobotics.roadrunner:core:0.5.6'
     implementation "com.bylazar:docs:1.0.5"
     implementation 'com.bylazar:fullpanels:1.0.12'
-
+    implementation 'com.pedropathing:revhub:3.0.0'
+    implementation 'com.pedropathing:tuning:1.0.0'
+    implementation "com.bylazar:fullpanels:1.0.12"
+    implementation 'com.acmerobotics.dashboard:dashboard:0.4.16'
+    implementation 'com.google.code.gson:gson:2.14.0'
 }
