@@ -31,6 +31,30 @@ public class ToggledMotor implements Subsystem {
         }
     }
 
+    public void On() {
+        if (hasCooldown) {
+            if (System.currentTimeMillis() < lastToggle + motorCooldown) {
+                isWaitingCooldown = true;
+            }
+            //Delay until cooldown
+        } else {
+            isOn = true;
+            motorEx.setPower(1);
+        }
+    }
+
+    public void Off() {
+        if (hasCooldown) {
+            if (System.currentTimeMillis() < lastToggle + motorCooldown) {
+                isWaitingCooldown = true;
+            }
+            //Delay until cooldown
+        } else {
+            isOn = true;
+            motorEx.setPower(0);
+        }
+    }
+
     public void toggle() {
         if (hasCooldown) {
             if (System.currentTimeMillis() < lastToggle + motorCooldown) {

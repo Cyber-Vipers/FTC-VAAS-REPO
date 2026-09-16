@@ -9,4 +9,9 @@ public interface Subsystem {
 
     public void update();
 
+    public default boolean plusOrMinus(double value, double tolerance,double comparison) {
+        return value + tolerance >= comparison || value - tolerance <= comparison;
+    }
+
+
 }
