@@ -11,7 +11,7 @@ import org.firstinspires.ftc.teamcode.SubsytemOrganizer.Subsystem;
 public class MecanumDrive implements Subsystem {
 
     public static DcMotorEx frontLeft,frontRight,backLeft,backRight;
-    public Gamepad gamepad;
+    private Gamepad gamepad;
 
     @Override
     public void update() {

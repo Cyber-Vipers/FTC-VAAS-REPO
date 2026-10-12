@@ -19,7 +19,7 @@ public class Flywheel implements Subsystem {
     public HardwareMap hardwareMap;
     public DcMotorEx flywheelMotor;
     public static PIDFCoefficients pidfCoefficients;
-    public static int speed = 0;
+    public static int speed = 6;
     private int tolerance;
 
 
