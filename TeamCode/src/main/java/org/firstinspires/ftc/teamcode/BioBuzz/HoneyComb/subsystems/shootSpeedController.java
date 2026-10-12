@@ -1,8 +1,5 @@
 package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems;
 
-import com.pedropathing.follower.Follower;
-import com.pedropathing.math.Pose;
-
 import org.firstinspires.ftc.teamcode.SubsytemOrganizer.Subsystem;
 import org.firstinspires.ftc.teamcode.neuronpathing.NeuronLocalizer;
 import org.firstinspires.ftc.teamcode.neuronpathing.Pose2D;
@@ -32,11 +29,6 @@ public class shootSpeedController implements Subsystem {
         distanceSource = new NeuronDistanceSource(localizer,goalPos);
     }
 
-    public shootSpeedController(Flywheel flywheel, DoubleUnaryOperator equation, Follower localizer, Pose goalPos) {
-        this.equation = equation;
-        this.flywheel = flywheel;
-        distanceSource = new PedroDistanceSource(localizer,goalPos);
-    }
     public interface DistanceSource {
         double distanceToGoal();
         void setGoal(Object object);
@@ -55,24 +47,6 @@ public class shootSpeedController implements Subsystem {
         public void setGoal(Object goal) {
             if (goal instanceof Pose2D pose2D) {
                 this.goal = pose2D;
-                return;
-            }
-            throw new RuntimeException();
-        }
-    }
-    public class PedroDistanceSource implements DistanceSource {
-        private final Follower follower;
-        private Pose goal;
-        public PedroDistanceSource(Follower follower, Pose goal) {
-            this.follower = follower;
-            this.goal = goal;
-        }
-        public double distanceToGoal() {
-            return follower.localizer.pose().distance(goal);
-        }
-        public void setGoal(Object goal) {
-            if (goal instanceof Pose pose) {
-                this.goal = pose;
                 return;
             }
             throw new RuntimeException();
