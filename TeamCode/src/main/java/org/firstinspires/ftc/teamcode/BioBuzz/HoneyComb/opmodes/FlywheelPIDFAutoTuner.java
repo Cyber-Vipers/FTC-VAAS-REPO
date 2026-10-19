@@ -21,7 +21,7 @@ import java.util.List;
  *   1. Feedforward: runs the motor at a few fixed powers and measures speed to find F.
  *   2. P sweep:     tries several P values. Each test drops the speed to 60% of the target (like after
  *                   a shot) and measures how fast and cleanly it recovers. Keeps the best one.
- *   3. I sweep:     same test for several I values with the chosen P.
+ *   3. D sweep:     same test for several D values with the chosen P (I is always 0).
  *   4. Done:        shows the final numbers and holds the target so you can check it.
  *
  * Before start (init):
@@ -31,7 +31,7 @@ import java.util.List;
  *   A            - flywheel on/off at the target
  *
  * The SDK resets PIDF every opmode, so copy the printed numbers into your code,
- * e.g. LiftShooter's "new PIDFCoefficients(P, I, D, F)".
+ * e.g. LiftShooter's "new PIDFCoefficients(P, 0, D, F)".
  */
 @TeleOp(name = "Honeycomb Flywheel PIDF Auto Tuner", group = "Honeycomb")
 public class FlywheelPIDFAutoTuner extends LinearOpMode {
@@ -51,7 +51,7 @@ public class FlywheelPIDFAutoTuner extends LinearOpMode {
 
     private static final double[] P_MULTIPLIERS_OF_F = {0.03, 0.06, 0.1, 0.2, 0.4, 0.7, 1.0};
     private static final double[] P_REFINE_MULTIPLIERS = {0.75, 1.33};
-    private static final double[] I_MULTIPLIERS_OF_P = {0, 0.05, 0.1, 0.2, 0.4};
+    private static final double[] D_MULTIPLIERS_OF_P = {0, 0.01, 0.03, 0.1, 0.3};
     private static final int REPEATS = 2;
 
     private static final double STEP_LOW_FRACTION = 0.6;
@@ -171,25 +171,25 @@ public class FlywheelPIDFAutoTuner extends LinearOpMode {
         }
         results.add(String.format("Best P = %.3f", bestP));
 
-        // 3. I sweep
-        double bestI = 0;
+        // 3. D sweep
+        double bestD = 0;
         bestCost = Double.MAX_VALUE;
-        for (double mult : I_MULTIPLIERS_OF_P) {
-            double i = bestP * mult;
-            StepResult r = testGains(bestP, i, f, "I sweep");
+        for (double mult : D_MULTIPLIERS_OF_P) {
+            double d = bestP * mult;
+            StepResult r = testGains(bestP, d, f, "D sweep");
             if (r == null) return;
             if (r.cost < bestCost) {
                 bestCost = r.cost;
-                bestI = i;
+                bestD = d;
             }
         }
-        results.add(String.format("Best I = %.3f", bestI));
+        results.add(String.format("Best D = %.3f", bestD));
 
         // 4. Final check with the chosen gains
-        StepResult fin = testGains(bestP, bestI, f, "Final check");
+        StepResult fin = testGains(bestP, bestD, f, "Final check");
         if (fin == null) return;
 
-        String code = String.format("new PIDFCoefficients(%.3f, %.3f, 0, %.3f)", bestP, bestI, f);
+        String code = String.format("new PIDFCoefficients(%.3f, 0, %.3f, %.3f)", bestP, bestD, f);
         RobotLog.ii("FlywheelPIDFAutoTuner", "Result for %.0f RPM: %s", targetRpm, code);
 
         boolean on = true;
@@ -200,8 +200,8 @@ public class FlywheelPIDFAutoTuner extends LinearOpMode {
 
             telemetry.addLine("=== DONE ===");
             telemetry.addData("P", "%.3f", bestP);
-            telemetry.addData("I", "%.3f", bestI);
-            telemetry.addData("D", "0");
+            telemetry.addData("I", "0");
+            telemetry.addData("D", "%.3f", bestD);
             telemetry.addData("F", "%.3f", f);
             telemetry.addLine(code);
             telemetry.addLine();
@@ -217,11 +217,11 @@ public class FlywheelPIDFAutoTuner extends LinearOpMode {
     }
 
     /** Runs REPEATS step tests with these gains and returns the averaged result, or null if stopped. */
-    private StepResult testGains(double p, double i, double f, String name) {
-        flywheel.setVelocityPIDFCoefficients(p, i, 0, f);
+    private StepResult testGains(double p, double d, double f, String name) {
+        flywheel.setVelocityPIDFCoefficients(p, 0, d, f);
         StepResult avg = new StepResult();
         for (int n = 0; n < REPEATS; n++) {
-            phase = String.format("%s: P %.3f  I %.3f  (run %d/%d)", name, p, i, n + 1, REPEATS);
+            phase = String.format("%s: P %.3f  D %.3f  (run %d/%d)", name, p, d, n + 1, REPEATS);
             StepResult r = stepTest();
             if (r == null) return null;
             avg.cost += r.cost / REPEATS;
@@ -231,8 +231,8 @@ public class FlywheelPIDFAutoTuner extends LinearOpMode {
             avg.steadyErrPct += r.steadyErrPct / REPEATS;
             avg.wobblePct += r.wobblePct / REPEATS;
         }
-        results.add(String.format("%s P %.3f I %.3f: %.2fs, os %.0f%%, wob %.1f%% -> %.3f",
-                name, p, i, avg.settleS, avg.overshootPct, avg.wobblePct, avg.cost));
+        results.add(String.format("%s P %.3f D %.3f: %.2fs, os %.0f%%, wob %.1f%% -> %.3f",
+                name, p, d, avg.settleS, avg.overshootPct, avg.wobblePct, avg.cost));
         return avg;
     }
 
