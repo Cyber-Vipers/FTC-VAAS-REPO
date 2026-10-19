@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems;
 
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -66,7 +67,21 @@ public class ToggledMotor implements Subsystem {
         }
 
     }
-
+    public void toggleDirection() {
+        if (motorEx.getDirection() == DcMotorSimple.Direction.REVERSE) {
+            setForward();
+        } else {
+            setReverse();
+        }
+    }
+    public void setForward() {
+        motorEx.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorEx.setPower(1);
+    }
+    public void setReverse() {
+        motorEx.setDirection(DcMotorSimple.Direction.REVERSE);
+        motorEx.setPower(1);
+    }
     private void forceToggle() {
         if (isOn) {
             motorEx.setPower(0);

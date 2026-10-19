@@ -50,7 +50,7 @@ public class Teleop extends OpMode {
         leftFlywheel = new Flywheel(hardwareMap,telemetry,leftPidfCoefficients,"leftFlywheel",flyWheelTolerance);
         rightFlywheel = new Flywheel(hardwareMap,telemetry,rightPidfCoefficients,"rightFlywheel",flyWheelTolerance);
         stick = new Stick(hardwareMap,telemetry);
-        lift = new Lift(hardwareMap,telemetry,liftTolerance,liftUpPosition,liftDownPosition);
+        lift = new Lift(hardwareMap,telemetry,liftTolerance,liftUpPosition,liftDownPosition,true);
         intake = new ToggledMotor(hardwareMap,telemetry,"intake",intakeCooldown, TimeUnit.SECONDS);
     }
 

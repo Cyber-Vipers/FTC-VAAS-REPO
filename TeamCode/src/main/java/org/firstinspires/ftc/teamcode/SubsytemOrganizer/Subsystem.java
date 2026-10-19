@@ -17,8 +17,8 @@ public interface Subsystem {
      * @param comparison
      * @return
      */
-    public default boolean plusOrMinus(double value, double tolerance,double comparison) {
-        return value + tolerance >= comparison || value - tolerance <= comparison;
+    public default boolean plusOrMinus(double value, double tolerance, double comparison) {
+        return Math.abs(value - comparison) <= tolerance;
     }
 
 
