@@ -50,8 +50,8 @@ public class Flywheel implements Subsystem {
     }
 
     /** Velocity in degrees or radians per second. Don't compare this with setSpeed values. */
-    public double getSpeed(AngleUnit angleUnit) {
-        return flywheelMotor.getVelocity(angleUnit);
+    public double getSpeed() {
+        return flywheelMotor.getVelocity();
     }
 
     public boolean isReversed() {
