@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.Lift;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.ToggledMotor;
@@ -15,7 +16,7 @@ public class LiftShooter extends OpMode {
     ToggledMotor intake;
 
     // Starting point only. Tune P and F for your flywheel.
-    PIDFCoefficients pidfCoefficients = new PIDFCoefficients(10, 3, 0, 13);
+    PIDFCoefficients pidfCoefficients = new PIDFCoefficients(5.902, 0.295, 0, 14.754);
 
     public int highestLift = 1062;
     public int lowestLift = 0;
@@ -58,29 +59,36 @@ public class LiftShooter extends OpMode {
             lift.liftDown();
         }
         if (gamepad1.a) {
-            intake.Off();
+            intake.toggle();
         }
+
         if (gamepad1.bWasPressed()) {
             telemetry.addLine("Toggling direction");
             intake.toggleDirection();
         }
-        if (shooting) {
-            shoot();
-        } else {
-            if (lift.getPosition() >= lift.notablePositions.get(0)) {
-                lift.bottomOut();
-            }
-            flywheel.reverse();
-            flywheel.setSpeed(500);
-            intake.setReverse();
-            intake.On();
+        if (gamepad1.right_bumper) {
+            flywheel.setSpeed((int) (flywheel.getSpeed() + 50));
         }
+        if (gamepad1.left_bumper) {
+            flywheel.setSpeed((int) (flywheel.getSpeed() - 50));
+        }
+//        if (shooting) {
+//            shoot();
+//        } else {
+//            if (lift.getPosition() >= lift.notablePositions.get(0)) {
+//                lift.bottomOut();
+//            }
+//            flywheel.reverse();
+//            flywheel.setSpeed(500);
+//            intake.setReverse();
+//            intake.On();
+//        }
     }
 
     public void shoot() {
 
         lift.goToNotablePosition(0);
-        if (flywheel.isUp2Speed()) {
+        if (flywheel.isUp2Speed() && lift.isUp()) {
             intake.setForward();
             intake.On();
         }

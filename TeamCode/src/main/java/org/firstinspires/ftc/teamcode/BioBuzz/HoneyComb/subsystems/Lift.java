@@ -54,7 +54,6 @@ public class Lift implements Subsystem {
 
 
     public void bottomOut() {
-
         setTargetPosition(lowestPosition + 20);
     }
     public void configure() {
