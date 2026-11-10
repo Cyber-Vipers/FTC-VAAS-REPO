@@ -34,18 +34,21 @@ public class PIDControlledLift extends Lift {
 
     @Override
     public void setTargetPosition(int position) {
-        position = Range.clip(position, low, high);
-        if (position != targetPosition) controller.reset();
-        targetPosition = position;
+        // No controller reset here: D is on measurement, so target changes don't kick,
+        // and resetting every loop while a button is held would wipe I and D.
+        targetPosition = Range.clip(position, low, high);
     }
 
     @Override
-    public void liftUp()   { setTargetPosition(targetPosition + modifierValue()); }
+    public void liftUp()   { setTargetPosition(targetPosition + modifier); }
     @Override
-    public void liftDown() { setTargetPosition(targetPosition - modifierValue()); }
+    public void liftDown() { setTargetPosition(targetPosition - modifier); }
 
     @Override
     public void update() {
+        // Pick up gains edited in place (e.g. from Panels) without needing setPidf()
+        controller.setCoefficients(coefficients.p, coefficients.i, coefficients.d, coefficients.f);
+
         double current = motorEx.getCurrentPosition();
 
         double ff = targetPosition > BOTTOM_ZONE ? coefficients.f : 0;
@@ -74,9 +77,8 @@ public class PIDControlledLift extends Lift {
     public void resetEncoder() {
         motorEx.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         motorEx.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        // Encoder is now 0, so hold here instead of driving back to the old target
+        targetPosition = Range.clip(0, low, high);
         controller.reset();
     }
-
-    // base class keeps `modifier` private; expose it with a protected getter there
-    private int modifierValue() { return 40; }
 }

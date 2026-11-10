@@ -16,7 +16,7 @@ import java.util.ArrayList;
 public class Lift implements Subsystem {
     public DcMotorEx motorEx;
     private final Telemetry telemetry;
-    private final int tolerance = 0;
+    private final int tolerance;
     private final int highestPosition;
     private final int lowestPosition;
     public PIDFCoefficients pidf() {
@@ -24,7 +24,7 @@ public class Lift implements Subsystem {
     }
     public ArrayList<Integer> notablePositions = new ArrayList<>();
     public double getPosition() { return motorEx.getCurrentPosition();}
-    private int modifier = 40;
+    protected int modifier = 40;
     @Override
     public void update() {
         telemetry.addData("Current Position", motorEx.getCurrentPosition());
@@ -37,6 +37,7 @@ public class Lift implements Subsystem {
     public Lift(HardwareMap hardwareMap, Telemetry telemetry, int tolerance, int highestPosition, int lowestPosition, boolean reversed, PIDFCoefficients pidf) {
         motorEx = hardwareMap.get(DcMotorEx.class,"lift");
         this.telemetry = telemetry;
+        this.tolerance = tolerance;
         if (motorEx.getCurrentPosition() <= 100) {
             motorEx.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         }
