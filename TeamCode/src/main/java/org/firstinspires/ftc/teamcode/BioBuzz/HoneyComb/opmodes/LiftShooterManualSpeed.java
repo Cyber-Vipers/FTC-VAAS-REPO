@@ -62,7 +62,7 @@ public class LiftShooterManualSpeed extends OpMode {
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        lift = new Lift(hardwareMap, telemetry, globalTolerance, highestLift, lowestLift, false);
+        lift = new Lift(hardwareMap, telemetry, globalTolerance, highestLift, lowestLift, false,LiftShooter.liftPidf);
         lift.resetEncoder();
     }
 

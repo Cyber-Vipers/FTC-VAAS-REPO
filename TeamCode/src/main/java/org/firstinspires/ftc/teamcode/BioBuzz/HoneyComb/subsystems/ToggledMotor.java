@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.SubsytemOrganizer.Subsystem;
 
 import java.util.concurrent.TimeUnit;
@@ -30,41 +31,59 @@ public class ToggledMotor implements Subsystem {
                 isWaitingCooldown = false;
             }
         }
+        voltageIgnored = false;
+    }
+    public boolean voltageIgnored = false;
+    public void ignoreVoltage() {
+        voltageIgnored = true;
     }
 
+    public void voltageControl() {
+        telemetry.addData("Motor Current", motorEx.getCurrent(CurrentUnit.MILLIAMPS));
+        telemetry.addData("Is Over Current", motorEx.isOverCurrent());
+        motorEx.setCurrentAlert(6000, CurrentUnit.MILLIAMPS);
+        if (motorEx.isOverCurrent()) {
+            telemetry.addLine("RUNNING");
+            motorEx.setPower(0);
+            Off();
+            return;
+        }
+    }
     public void On() {
-        if (hasCooldown) {
-            if (System.currentTimeMillis() < lastToggle + motorCooldown) {
-                isWaitingCooldown = true;
-            }
-            //Delay until cooldown
-        } else {
+//        if (hasCooldown) {
+//            if (System.currentTimeMillis() < lastToggle + motorCooldown) {
+//                isWaitingCooldown = true;
+//            }
+//            //Delay until cooldown
+//        } else {
+        telemetry.addLine("Turning On");
             isOn = true;
             motorEx.setPower(1);
-        }
+//        }
     }
 
     public void Off() {
-        if (hasCooldown) {
-            if (System.currentTimeMillis() < lastToggle + motorCooldown) {
-                isWaitingCooldown = true;
-            }
-            //Delay until cooldown
-        } else {
-            isOn = true;
+//        if (hasCooldown) {
+//            if (System.currentTimeMillis() < lastToggle + motorCooldown) {
+//                isWaitingCooldown = true;
+//            }
+//            //Delay until cooldown
+//        } else {
+        telemetry.addLine("TURNING OFF");
+            isOn = false;
             motorEx.setPower(0);
-        }
+//        }
     }
 
     public void toggle() {
-        if (hasCooldown) {
-            if (System.currentTimeMillis() < lastToggle + motorCooldown) {
-                isWaitingCooldown = true;
-            }
-            //Delay until cooldown
-        } else {
+//        if (hasCooldown) {
+//            if (System.currentTimeMillis() < lastToggle + motorCooldown) {
+//                isWaitingCooldown = true;
+//            }
+//            //Delay until cooldown
+//        } else {
             forceToggle();
-        }
+//        }
 
     }
     public void toggleDirection() {
@@ -76,29 +95,41 @@ public class ToggledMotor implements Subsystem {
     }
     public void setForward() {
         motorEx.setDirection(DcMotorSimple.Direction.FORWARD);
-        motorEx.setPower(1);
+        if (isOn) {
+            motorEx.setPower(1);
+        }
+
     }
     public void setReverse() {
         motorEx.setDirection(DcMotorSimple.Direction.REVERSE);
-        motorEx.setPower(1);
+        if (isOn) {
+            motorEx.setPower(1);
+        }
+    }
+    public boolean isOverCurrent() {
+        return motorEx.isOverCurrent();
     }
     private void forceToggle() {
         if (isOn) {
             motorEx.setPower(0);
+            isOn = false;
         } else {
             motorEx.setPower(1);
+            isOn = true;
         }
         lastToggle = System.currentTimeMillis();
     }
     public ToggledMotor(HardwareMap hardwareMap, Telemetry telemetry,String motorName) {
         motorEx = hardwareMap.get(DcMotorEx.class,motorName);
         this.motorName = motorName;
+        this.telemetry = telemetry;
     }
     public ToggledMotor(HardwareMap hardwareMap, Telemetry telemetry, String motorName, double cooldown, TimeUnit timeUnit) {
         this.motorName = motorName;
         motorEx = hardwareMap.get(DcMotorEx.class,motorName);
         hasCooldown = true;
         motorCooldown = timeUnit.toMillis((long) cooldown);
+        this.telemetry = telemetry;
     }
 
 

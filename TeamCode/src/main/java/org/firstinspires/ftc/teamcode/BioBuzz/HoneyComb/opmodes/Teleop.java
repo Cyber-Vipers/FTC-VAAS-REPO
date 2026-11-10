@@ -2,12 +2,14 @@ package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.Lift;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.MecanumDrive;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.Stick;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.ToggledMotor;
+import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.toggledServo;
 import org.firstinspires.ftc.teamcode.neuronpathing.NeuronDrive;
 import org.firstinspires.ftc.teamcode.neuronpathing.NeuronLocalizer;
 
@@ -19,7 +21,8 @@ public class Teleop extends OpMode {
     Flywheel rightFlywheel;
     Stick stick;
     Lift lift;
-    ToggledMotor intake;
+    ToggledMotor liftTransfer,intake;
+    toggledServo intakeLift;
     NeuronLocalizer localizer;
     NeuronDrive drive;
     public enum ShootStates {
@@ -28,6 +31,9 @@ public class Teleop extends OpMode {
         Shooting
     }
 
+    Servo intakeLiftServo;
+
+
     public ShootStates shootState = ShootStates.Intaking;
     public int liftUpPosition = 1200; // REPLACE ME
     public int liftDownPosition = 0;
@@ -35,6 +41,8 @@ public class Teleop extends OpMode {
     public int shootTime = 3;
 
     public double intakeCooldown = 0.2;
+    public double intakeLiftUp = 0;
+    public double intakeLiftDown = 0.5;
     public int shootingFlywheelSpeed = 1200; // REPLACE ME
     public int intakingFlywheelSpeed = 120;
     ElapsedTime shootTimer = new ElapsedTime();
@@ -50,17 +58,26 @@ public class Teleop extends OpMode {
         leftFlywheel = new Flywheel(hardwareMap,telemetry,leftPidfCoefficients,"leftFlywheel",flyWheelTolerance);
         rightFlywheel = new Flywheel(hardwareMap,telemetry,rightPidfCoefficients,"rightFlywheel",flyWheelTolerance);
         stick = new Stick(hardwareMap,telemetry);
-        lift = new Lift(hardwareMap,telemetry,liftTolerance,liftUpPosition,liftDownPosition,true);
-        intake = new ToggledMotor(hardwareMap,telemetry,"intake",intakeCooldown, TimeUnit.SECONDS);
+        lift = new Lift(hardwareMap,telemetry,liftTolerance,liftUpPosition,liftDownPosition,true,LiftShooter.liftPidf);
+        liftTransfer = new ToggledMotor(hardwareMap,telemetry,"liftTransfer",intakeCooldown, TimeUnit.SECONDS);
+        intakeLift = new toggledServo(hardwareMap,telemetry,intakeLiftUp,intakeLiftDown,"liftTransfer",true);
+        intakeLiftServo = hardwareMap.get(Servo.class,"liftTransfer");
+    }
+
+    @Override
+    public void start() {
+        intakeLift.moveDown();
     }
 
     @Override
     public void loop() {
 //        drive.update();
         controls();
-        intake.update();
+        liftTransfer.update();
         mecanumDrive.update();
         leftFlywheel.update();
+        intake.update();
+
         shoot();
     }
 
@@ -79,6 +96,13 @@ public class Teleop extends OpMode {
             //Shoot
             shootState = ShootStates.Preparing;
         }
+        if (gamepad1.dpadUpWasPressed()) {
+            intakeLiftServo.setPosition(intakeLiftServo.getPosition() + 0.1);
+        }
+        if (gamepad1.dpadDownWasPressed()) {
+            intakeLiftServo.setPosition(intakeLiftServo.getPosition() - 0.1);
+        }
+        telemetry.addData("Intake Lift Servo Position", intakeLiftServo.getPosition());
     }
 
     public void driverTwo() {
@@ -115,7 +139,7 @@ public class Teleop extends OpMode {
                 beginIntake();
             }
             case Preparing -> {
-                intake.Off();
+                liftTransfer.Off();
                 if (lift.isUp() && (leftFlywheel.isUp2Speed() && rightFlywheel.isUp2Speed())) {
                     shootTimer.reset();
                     shootTimer.startTime();
@@ -138,7 +162,7 @@ public class Teleop extends OpMode {
 
     public void beginIntake() {
         lift.setTargetPosition(0);
-        intake.On();
+        liftTransfer.On();
         leftFlywheel.reverse();
         rightFlywheel.reverse();
         rightFlywheel.setSpeed(intakingFlywheelSpeed);
