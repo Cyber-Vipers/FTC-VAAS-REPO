@@ -53,6 +53,9 @@ public class LiftPIDFAutoTuner extends LinearOpMode {
     // Edited in place; PIDControlledLift.update() reloads it every loop
     private final PIDFCoefficients gains = new PIDFCoefficients(START_P, 0, 0, 0);
     private int target;
+    // Fastest the lift has come down in the last few ticks before the bottom (soft-landing check)
+    private static final int LANDING_CHECK_HEIGHT = 40;
+    private double maxLandingSpeed = 0;
 
     private String phase = "";
     private final List<String> results = new ArrayList<>();
@@ -154,6 +157,8 @@ public class LiftPIDFAutoTuner extends LinearOpMode {
             telemetry.addLine();
             telemetry.addData("Time to reach", "%.2f s, overshoot %.0f ticks", fin.settleS, fin.overshoot);
             telemetry.addData("Hold error / wobble", "%.1f / %.1f ticks", fin.steadyErr, fin.wobble);
+            telemetry.addData("Fastest landing", "%.0f ticks/s (limit at bottom %.0f)",
+                    maxLandingSpeed, PIDControlledLift.LANDING_SPEED);
             telemetry.addLine();
             telemetry.addData("A: move to", atShooting ? "bottom" : "shooting position");
             telemetry.update();
@@ -247,6 +252,9 @@ public class LiftPIDFAutoTuner extends LinearOpMode {
         ElapsedTime resting = new ElapsedTime();
         while (opModeIsActive() && timer.seconds() < BOTTOM_WAIT_MAX_S) {
             lift.update();
+            if (lift.getPosition() < LOWEST_LIFT + LANDING_CHECK_HEIGHT) {
+                maxLandingSpeed = Math.max(maxLandingSpeed, -lift.motorEx.getVelocity());
+            }
             if (lift.getPosition() > LOWEST_LIFT + 30) resting.reset();
             if (resting.seconds() > BOTTOM_REST_S) break;
             showStatus();
@@ -279,6 +287,7 @@ public class LiftPIDFAutoTuner extends LinearOpMode {
     private void showStatus() {
         telemetry.addData("Phase", phase);
         telemetry.addData("Gains", "P %.4f  D %.5f  F %.3f", gains.p, gains.d, gains.f);
+        telemetry.addData("Fastest landing so far", "%.0f ticks/s", maxLandingSpeed);
         telemetry.addLine();
         int start = Math.max(0, results.size() - 10);
         for (int n = start; n < results.size(); n++) {
