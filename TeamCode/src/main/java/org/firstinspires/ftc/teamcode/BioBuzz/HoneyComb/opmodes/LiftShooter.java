@@ -22,7 +22,7 @@ public class LiftShooter extends OpMode {
     Servo intakeLiftServo;
 
     // Starting point only. Tune P and F for your flywheel.
-    PIDFCoefficients pidfCoefficients = new PIDFCoefficients(5.902, 0.295, 0, 14.754);
+    PIDFCoefficients pidfCoefficients = new PIDFCoefficients(0.728, 0, 0.218, 24.255);
 
     public int highestLift = 1062;
     public int lowestLift = 0;
@@ -30,11 +30,11 @@ public class LiftShooter extends OpMode {
     public static int intakeSpeed = 1000;
     public static double intakeLiftUp = -0.45;
 
-    public static int shootingPosition = 540;
-    public static double intakeLiftDown = 0.35;
+    public static int shootingPosition = 740;
+    public static double intakeLiftDown = 0.3;
     public static boolean autoMode = true;
     public static int globalTolerance = 50;
-    public static PIDFCoefficients liftPidf = new PIDFCoefficients(1,1,1,1);
+    public static PIDFCoefficients liftPidf = new PIDFCoefficients(0.03,0,0.0006,0.279);
 
     @Override
     public void init() {
@@ -142,7 +142,8 @@ public class LiftShooter extends OpMode {
             if (gamepad1.bWasPressed()) {
                 telemetry.addLine("Toggling direction");
                 intake.toggleDirection();
-                liftTransfer.toggleDirection();
+                liftTransfer.On();
+                liftTransfer.ignoreVoltage();
             }
             if (gamepad1.right_bumper) {
                 flywheel.setSpeed((int) (flywheel.getSpeed() + 50));
@@ -199,25 +200,30 @@ public class LiftShooter extends OpMode {
     public boolean hasShot = false;
     public void shoot() {
         lift.goToNotablePosition(0);
-        liftTransfer.Off(); // TESTING ONLY
-//        liftTransfer.ignoreVoltage();
+//        liftTransfer.Off(); // TESTING ONLY
+        liftTransfer.ignoreVoltage();
+        boolean shooting = flywheel.isUp2Speed() && lift.plusOrMinus(lift.getPosition(),globalTolerance,lift.notablePositions.get(0));
+        if (!hasShot && !shooting) {
+            liftTransfer.On();
+            liftTransfer.setForward();
+        }
         telemetry.addData("Can shoot?: ",flywheel.isUp2Speed() && lift.plusOrMinus(lift.getPosition(),globalTolerance,lift.notablePositions.get(0)));
-        if (flywheel.isUp2Speed() && lift.plusOrMinus(lift.getPosition(),globalTolerance,lift.notablePositions.get(0))) {
+        if (shooting) {
             hasShot = true;
-//            liftTransfer.setForward();
-//            liftTransfer.On();
+            liftTransfer.setForward();
+            liftTransfer.On();
         } else {
-            if (hasShot == false) {
-//                liftTransfer.setReverse();
-//                liftTransfer.On();
+            if (!hasShot) {
+                liftTransfer.setReverse();
+                liftTransfer.On();
             }
         }
         intake.Off();
         intake.setForward();
         intakeLift.nudgeDown();
         flywheel.setSpeed(0);
-//        flywheel.forward();
-//        flywheel.setSpeed(shootSpeed);
+        flywheel.forward();
+        flywheel.setSpeed(shootSpeed);
     }
 
     public void flower() {
