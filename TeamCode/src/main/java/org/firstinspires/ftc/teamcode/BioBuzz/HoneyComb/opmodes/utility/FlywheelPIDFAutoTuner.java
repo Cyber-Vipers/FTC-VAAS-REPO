@@ -1,8 +1,8 @@
-package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes;
+package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.utility;
 
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.Utility;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -33,7 +33,7 @@ import java.util.List;
  * The SDK resets PIDF every opmode, so copy the printed numbers into your code,
  * e.g. LiftShooter's "new PIDFCoefficients(P, 0, D, F)".
  */
-@TeleOp(name = "Honeycomb Flywheel PIDF Auto Tuner", group = "Honeycomb")
+@Utility(name = "Honeycomb Flywheel PIDF Auto Tuner")
 public class FlywheelPIDFAutoTuner extends LinearOpMode {
     private static final String FLYWHEEL_NAME = "flywheel";
 

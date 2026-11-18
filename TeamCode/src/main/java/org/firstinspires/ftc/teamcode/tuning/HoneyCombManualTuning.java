@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
-import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.LiftShooter;
+import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.teleop.LiftShooter;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.Lift;
 
 /*

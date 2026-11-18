@@ -1,12 +1,13 @@
-package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes;
+package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.utility;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.Utility;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.teleop.LiftShooter;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.Lift;
 
@@ -29,7 +30,7 @@ import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.Lift;
  *
  * left bumper - switch between coarse and fine step sizes
  */
-@TeleOp(name="Honeycomb Lift Shooter (Manual)", group="Honeycomb")
+@Utility(name="Honeycomb Lift Shooter (Manual)")
 public class LiftShooterManualSpeed extends OpMode {
     Lift lift;
     Flywheel flywheel;
@@ -62,7 +63,7 @@ public class LiftShooterManualSpeed extends OpMode {
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        lift = new Lift(hardwareMap, telemetry, globalTolerance, highestLift, lowestLift, false,LiftShooter.liftPidf);
+        lift = new Lift(hardwareMap, telemetry, globalTolerance, highestLift, lowestLift, false, LiftShooter.liftPidf);
         lift.resetEncoder();
     }
 

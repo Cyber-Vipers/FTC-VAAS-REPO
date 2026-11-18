@@ -41,7 +41,7 @@ public class ToggledMotor implements Subsystem {
     public void voltageControl() {
         telemetry.addData("Motor Current", motorEx.getCurrent(CurrentUnit.MILLIAMPS));
         telemetry.addData("Is Over Current", motorEx.isOverCurrent());
-        motorEx.setCurrentAlert(6000, CurrentUnit.MILLIAMPS);
+        motorEx.setCurrentAlert(5000, CurrentUnit.MILLIAMPS);
         if (motorEx.isOverCurrent()) {
             telemetry.addLine("RUNNING");
             motorEx.setPower(0);

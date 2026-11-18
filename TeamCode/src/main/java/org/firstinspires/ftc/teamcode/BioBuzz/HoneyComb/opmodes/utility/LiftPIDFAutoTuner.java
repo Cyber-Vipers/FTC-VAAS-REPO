@@ -1,12 +1,13 @@
-package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes;
+package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.utility;
 
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.Utility;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
 
+import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.teleop.LiftShooter;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.PIDControlledLift;
 
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ import java.util.List;
  * I stays 0 - F holds the lift up, so I isn't needed.
  * Copy the result into LiftShooter's "liftPidf = new PIDFCoefficients(P, 0, D, F)".
  */
-@TeleOp(name = "Honeycomb Lift PIDF Auto Tuner", group = "Honeycomb")
+@Utility(name = "Honeycomb Lift PIDF Auto Tuner")
 public class LiftPIDFAutoTuner extends LinearOpMode {
     // Same lift setup as LiftShooter
     private static final int HIGHEST_LIFT = 1062;

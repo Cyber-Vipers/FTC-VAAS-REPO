@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
@@ -16,6 +17,7 @@ public class PIDControlledLift extends Lift {
     private PIDFCoefficients coefficients;
     private final int low, high;
     private int targetPosition = 0;
+    private PanelsTelemetry panelsTelemetry = PanelsTelemetry.INSTANCE;
 
     private static final int BOTTOM_ZONE = 20;
 
@@ -55,6 +57,7 @@ public class PIDControlledLift extends Lift {
         // No controller reset here: D is on measurement, so target changes don't kick,
         // and resetting every loop while a button is held would wipe I and D.
         targetPosition = Range.clip(position, low, high);
+        telemetry.addLine("Setting Target Position");
     }
 
     @Override
@@ -103,6 +106,7 @@ public class PIDControlledLift extends Lift {
         telemetry.addData("Lift profiled target", "%.0f", profiledTarget);
         telemetry.addData("Lift power", power);
         telemetry.addData("Lift velocity", "%.0f", velocity);
+        panelsTelemetry.getTelemetry().addData("Error",targetPosition - current);
     }
 
     /** How fast the profiled target may move down with this much distance left to go. */

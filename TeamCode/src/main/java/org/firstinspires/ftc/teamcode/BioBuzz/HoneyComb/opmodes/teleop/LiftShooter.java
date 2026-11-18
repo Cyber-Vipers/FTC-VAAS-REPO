@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes;
+package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.teleop;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -7,45 +7,47 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.Flywheel;
-import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.Lift;
+import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.MecanumDrive;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.PIDControlledLift;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.ToggledMotor;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.toggledServo;
 
 @Configurable
-@TeleOp(name="Honeycomb Lift Shooter", group="Honeycomb")
+@TeleOp(name="Honeycomb Lift Shooter Tester", group="Honeycomb")
 public class LiftShooter extends OpMode {
     PIDControlledLift lift;
     Flywheel flywheel;
     ToggledMotor intake, liftTransfer;
     toggledServo intakeLift;
     Servo intakeLiftServo;
+    MecanumDrive mecanumDrive;
 
     // Starting point only. Tune P and F for your flywheel.
-    PIDFCoefficients pidfCoefficients = new PIDFCoefficients(0.728, 0, 0.218, 24.255);
+    PIDFCoefficients pidfCoefficients = new PIDFCoefficients(16.892, 0, 0.507, 12.701);
 
     public int highestLift = 1062;
     public int lowestLift = 0;
-    public int shootSpeed = 1500;
+    public int shootSpeed = 2300;
     public static int intakeSpeed = 1000;
     public static double intakeLiftUp = -0.45;
 
-    public static int shootingPosition = 740;
+    public static int shootingPosition = 940;
     public static double intakeLiftDown = 0.3;
     public static boolean autoMode = true;
-    public static int globalTolerance = 50;
-    public static PIDFCoefficients liftPidf = new PIDFCoefficients(0.03,0,0.0006,0.279);
+    public static int globalTolerance = 70;
+    public static PIDFCoefficients liftPidf = new PIDFCoefficients(0.0028,0,0.0003,0.039);
 
     @Override
     public void init() {
-        flywheel = new Flywheel(hardwareMap, telemetry, pidfCoefficients, 40);
+        flywheel = new Flywheel(hardwareMap, telemetry, pidfCoefficients, 100);
         intake = new ToggledMotor(hardwareMap, telemetry, "intake");
         lift = new PIDControlledLift(hardwareMap, telemetry, globalTolerance, highestLift, lowestLift, false,liftPidf);
         lift.resetEncoder();
         liftTransfer = new ToggledMotor(hardwareMap,telemetry,"transfer");
+        mecanumDrive = new MecanumDrive(hardwareMap,telemetry,gamepad1);
         // Shooting position
         lift.saveNotablePosition(shootingPosition);
-        intakeLift = new toggledServo(hardwareMap,telemetry,intakeLiftUp,intakeLiftDown,"liftTransfer",true);
+        intakeLift = new toggledServo(hardwareMap,telemetry,intakeLiftUp,intakeLiftDown,"liftTransfer",true,true);
         intakeLiftServo = hardwareMap.get(Servo.class,"liftTransfer");
         intakeLiftServo.setPosition(0);
         intakeLiftServo.setDirection(Servo.Direction.REVERSE);
@@ -74,6 +76,7 @@ public class LiftShooter extends OpMode {
     }
     @Override
     public void loop() {
+         mecanumDrive.update();
         lift.update();
         flywheel.update();
         liftTransfer.update();
@@ -88,7 +91,7 @@ public class LiftShooter extends OpMode {
 
     public void driver1() {
         boolean shooting = gamepad1.right_trigger > 0.5;
-        boolean outtaking = gamepad1.left_trigger > 0.5;
+        boolean outtaking = gamepad1.a;
         telemetry.addData("Lift Position", lift.getPosition());
         telemetry.addData("Shooting?", shooting);
         telemetry.addData("Flywheel target", flywheel.getTargetVelocity());
@@ -153,10 +156,14 @@ public class LiftShooter extends OpMode {
             }
         } else {
             if (gamepad1.a) {
+                //outtake
                 intake.setForward();
                 intake.On();
+
             }
             if (gamepad1.b) {
+                //intake
+                liftTransfer.setReverse();
                 intake.setReverse();
                 intake.On();
             }
@@ -179,10 +186,12 @@ public class LiftShooter extends OpMode {
                 shoot();
             } else {
                 liftTransfer.setReverse();
+                liftTransfer.On();
                 if (hasShot) {
                     liftTransfer.On();
                 }
                 hasShot = false;
+                hasQueued = false;
                 if (lift.plusOrMinus(lift.getPosition(),100,lift.notablePositions.get(0))) {
                     lift.bottomOut();
                 }
@@ -198,10 +207,15 @@ public class LiftShooter extends OpMode {
         }
     }
     public boolean hasShot = false;
+    public boolean hasQueued = false;
     public void shoot() {
-        lift.goToNotablePosition(0);
+        if (!hasQueued) {
+            hasQueued = true;
+            lift.goToNotablePosition(0);
+        }
 //        liftTransfer.Off(); // TESTING ONLY
         liftTransfer.ignoreVoltage();
+
         boolean shooting = flywheel.isUp2Speed() && lift.plusOrMinus(lift.getPosition(),globalTolerance,lift.notablePositions.get(0));
         if (!hasShot && !shooting) {
             liftTransfer.On();
@@ -213,7 +227,8 @@ public class LiftShooter extends OpMode {
             liftTransfer.setForward();
             liftTransfer.On();
         } else {
-            if (!hasShot) {
+            if (!hasShot && shooting == false) {
+                telemetry.addLine("Intaking on Transfer");
                 liftTransfer.setReverse();
                 liftTransfer.On();
             }

@@ -1,11 +1,11 @@
-package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes;
+package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.utility;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.Utility;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
-@TeleOp(name = "Flywheel Test", group = "Test")
+@Utility(name = "Flywheel Test")
 public class FlywheelTest extends OpMode {
     DcMotorEx m;
 
