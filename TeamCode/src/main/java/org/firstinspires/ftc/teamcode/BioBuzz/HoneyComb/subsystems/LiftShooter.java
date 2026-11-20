@@ -27,7 +27,7 @@ public class LiftShooter implements Subsystem {
     public static boolean autoMode = true;
     public static int globalTolerance = 100;
     private final PIDFCoefficients liftPidf = new PIDFCoefficients(0.0028,0,0.0003,0.039);
-    private final PIDFCoefficients flywheelPIDF = new PIDFCoefficients(16.892, 0, 0.507, 12.701);
+    private final PIDFCoefficients flywheelPIDF = new PIDFCoefficients(8.509, 0, 0, 11.661);
     @Override
     public void update() {
         if (lift.notablePositions.get(0) != shootingPosition) {

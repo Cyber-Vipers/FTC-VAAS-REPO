@@ -27,9 +27,9 @@ public class Teleop extends OpMode {
         mecanumDrive = new MecanumDrive(hardwareMap,telemetry,gamepad1);
         LiftShooter.shootingPosition = shootingPosition;
         liftShooter.shootSpeed = shootingSpeed;
-        localizer = new NeuronLocalizer(hardwareMap,telemetry,145,35.7);
-        //TODO measure trackwidth in inches https://brainstormz.us/neuron-pathing/docs/installation
-        drive = new NeuronDrive(hardwareMap,localizer,-1);
+//        localizer = new NeuronLocalizer(hardwareMap,telemetry,145,35.7);
+//        //TODO measure trackwidth in inches https://brainstormz.us/neuron-pathing/docs/installation
+//        drive = new NeuronDrive(hardwareMap,localizer,-1);
     }
 
     @Override
