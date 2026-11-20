@@ -14,7 +14,7 @@ import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.toggledServo;
 
 @Configurable
 @TeleOp(name="Honeycomb Lift Shooter Tester", group="Honeycomb")
-public class LiftShooter extends OpMode {
+public class LiftShooterTeleop extends OpMode {
     PIDControlledLift lift;
     Flywheel flywheel;
     ToggledMotor intake, liftTransfer;
@@ -25,7 +25,7 @@ public class LiftShooter extends OpMode {
     // Starting point only. Tune P and F for your flywheel.
     PIDFCoefficients pidfCoefficients = new PIDFCoefficients(16.892, 0, 0.507, 12.701);
 
-    public int highestLift = 1062;
+    public static int highestLift = 3062;
     public int lowestLift = 0;
     public int shootSpeed = 2300;
     public static int intakeSpeed = 1000;
@@ -87,6 +87,7 @@ public class LiftShooter extends OpMode {
         if (lift.pidf() != liftPidf) {
             lift.setPidf(liftPidf);
         }
+
     }
 
     public void driver1() {

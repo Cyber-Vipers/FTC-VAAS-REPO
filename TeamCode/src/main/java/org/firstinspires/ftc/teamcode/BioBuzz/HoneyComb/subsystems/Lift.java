@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -12,17 +13,17 @@ import org.firstinspires.ftc.teamcode.SubsytemOrganizer.Subsystem;
 import java.util.ArrayList;
 
 
-
+@Configurable
 public class Lift implements Subsystem {
     public DcMotorEx motorEx;
     private final Telemetry telemetry;
     private final int tolerance;
-    private final int highestPosition;
+    public static int highestPosition;
     private final int lowestPosition;
     public PIDFCoefficients pidf() {
         return motorEx.getPIDFCoefficients(DcMotor.RunMode.RUN_TO_POSITION);
     }
-    public ArrayList<Integer> notablePositions = new ArrayList<>();
+    public static ArrayList<Integer> notablePositions = new ArrayList<>();
     public double getPosition() { return motorEx.getCurrentPosition();}
     protected int modifier = 40;
     @Override

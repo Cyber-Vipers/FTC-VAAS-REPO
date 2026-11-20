@@ -1,37 +1,49 @@
 package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.teleop;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.LiftShooter;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.MecanumDrive;
+import org.firstinspires.ftc.teamcode.neuronpathing.NeuronDrive;
+import org.firstinspires.ftc.teamcode.neuronpathing.NeuronLocalizer;
 
 @TeleOp(name = "Honeycomb Robot Teleop", group = "Honeycomb")
+@Configurable
 public class Teleop extends OpMode {
     LiftShooter liftShooter;
     ElapsedTime timer = new ElapsedTime();
     MecanumDrive mecanumDrive;
+    NeuronLocalizer localizer;
+    NeuronDrive drive;
     int shootingTime = 3;
-    public static int shootingPosition = 900;
-    int shootingSpeed = 2200;
+    public static int shootingPosition = 935;
+    public static int shootingSpeed = 2200;
     @Override
     public void init() {
         liftShooter = new LiftShooter(hardwareMap, telemetry,gamepad1);
         mecanumDrive = new MecanumDrive(hardwareMap,telemetry,gamepad1);
         LiftShooter.shootingPosition = shootingPosition;
         liftShooter.shootSpeed = shootingSpeed;
+        localizer = new NeuronLocalizer(hardwareMap,telemetry,145,35.7);
+        //TODO measure trackwidth in inches https://brainstormz.us/neuron-pathing/docs/installation
+        drive = new NeuronDrive(hardwareMap,localizer,-1);
     }
 
     @Override
     public void start() {
         liftShooter.intakeLift.moveDown();
     }
-
+//145mm
     @Override
     public void loop() {
-        if (shootingPosition != org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.teleop.LiftShooter.shootingPosition) {
+        if (shootingPosition != LiftShooterTeleop.shootingPosition) {
             LiftShooter.shootingPosition = shootingPosition;
+        }
+        if (shootingSpeed != liftShooter.shootSpeed) {
+            liftShooter.shootSpeed = shootingSpeed;
         }
         driverOne();
         mecanumDrive.update();

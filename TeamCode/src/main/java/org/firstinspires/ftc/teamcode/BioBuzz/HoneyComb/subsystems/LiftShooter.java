@@ -16,13 +16,13 @@ public class LiftShooter implements Subsystem {
     public boolean hasShot = false;
     public boolean hasQueued = false;
     public boolean shooting = false;
-    public int highestLift = 1562;
+    public int highestLift = 1762;
     public int lowestLift = 0;
     public int shootSpeed = 2300;
     public static int intakeSpeed = 1000;
     public static double intakeLiftUp = -0.45;
     public static boolean intakeOn = false;
-    public static int shootingPosition = 940;
+    public static int shootingPosition = 1500;
     public static double intakeLiftDown = 0.3;
     public static boolean autoMode = true;
     public static int globalTolerance = 100;
@@ -32,6 +32,9 @@ public class LiftShooter implements Subsystem {
     public void update() {
         if (lift.notablePositions.get(0) != shootingPosition) {
             lift.notablePositions.set(0,shootingPosition);
+        }
+        if (flywheel.getSpeed() != shootSpeed) {
+            flywheel.setSpeed(shootSpeed);
         }
         telemetry.addData("Lift Position", lift.getPosition());
         telemetry.addData("Flywheel Target", flywheel.getTargetVelocity());

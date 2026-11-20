@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.teleop.LiftShooter;
+import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.teleop.LiftShooterTeleop;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.Lift;
 
@@ -63,7 +63,7 @@ public class LiftShooterManualSpeed extends OpMode {
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        lift = new Lift(hardwareMap, telemetry, globalTolerance, highestLift, lowestLift, false, LiftShooter.liftPidf);
+        lift = new Lift(hardwareMap, telemetry, globalTolerance, highestLift, lowestLift, false, LiftShooterTeleop.liftPidf);
         lift.resetEncoder();
     }
 

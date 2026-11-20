@@ -6,11 +6,11 @@ import org.firstinspires.ftc.teamcode.neuronpathing.Pose2D;
 
 import java.util.function.DoubleUnaryOperator;
 
-public class shootSpeedController implements Subsystem {
+public class RegressionController implements Subsystem {
 
     public Flywheel flywheel;
     public DoubleUnaryOperator equation;
-    public Object localizer;
+    public NeuronLocalizer localizer;
     private final DistanceSource distanceSource;
     @Override
     public void update() {
@@ -23,7 +23,7 @@ public class shootSpeedController implements Subsystem {
        distanceSource.setGoal(object);
     }
 
-    public shootSpeedController(Flywheel flywheel, DoubleUnaryOperator equation, NeuronLocalizer localizer, Pose2D goalPos) {
+    public RegressionController(Flywheel flywheel, DoubleUnaryOperator equation, NeuronLocalizer localizer, Pose2D goalPos) {
         this.equation = equation;
         this.flywheel = flywheel;
         distanceSource = new NeuronDistanceSource(localizer,goalPos);

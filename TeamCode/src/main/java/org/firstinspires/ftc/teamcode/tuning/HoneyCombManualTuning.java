@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
-import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.teleop.LiftShooter;
+import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.teleop.LiftShooterTeleop;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.Lift;
 
 /*
@@ -78,7 +78,7 @@ public class HoneyCombManualTuning extends LinearOpMode {
     public void runOpMode() {
         flywheel = hardwareMap.get(DcMotorEx.class, FLYWHEEL_NAME);
         transfer = hardwareMap.get(DcMotorEx.class, TRANSFER_NAME);
-        lift = new Lift(hardwareMap, telemetry, LIFT_TOLERANCE, liftUpTarget, LIFT_DOWN_POSITION, false, LiftShooter.liftPidf);
+        lift = new Lift(hardwareMap, telemetry, LIFT_TOLERANCE, liftUpTarget, LIFT_DOWN_POSITION, false, LiftShooterTeleop.liftPidf);
 
         flywheel.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         flywheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);

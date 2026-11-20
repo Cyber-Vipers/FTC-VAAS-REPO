@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
 
-import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.teleop.LiftShooter;
+import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.teleop.LiftShooterTeleop;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.PIDControlledLift;
 
 import java.util.ArrayList;
@@ -70,10 +70,10 @@ public class LiftPIDFAutoTuner extends LinearOpMode {
         for (LynxModule hub : hardwareMap.getAll(LynxModule.class)) {
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
         }
-        lift = new PIDControlledLift(hardwareMap, telemetry, LiftShooter.globalTolerance,
+        lift = new PIDControlledLift(hardwareMap, telemetry, LiftShooterTeleop.globalTolerance,
                 HIGHEST_LIFT, LOWEST_LIFT, false, gains);
         lift.resetEncoder();
-        lift.saveNotablePosition(LiftShooter.shootingPosition);
+        lift.saveNotablePosition(LiftShooterTeleop.shootingPosition);
         target = lift.notablePositions.get(SHOOTING_POSITION_INDEX);
 
         while (opModeInInit()) {
