@@ -29,7 +29,8 @@ import java.util.List;
  *   FIRE     transfer feeds the balls into the flywheel for FIRE_TIME_MS, still aiming,
  *            then back to NORMAL
  *
- * RT again while lining up fires right away (from SPIN_UP: as soon as the lift is up). LT, Y,
+ * RT again while lining up fires as soon as the lift is up, without waiting for aim or the
+ * flywheel. FIRE always ends after FIRE_MAX_MS. LT, Y,
  * the right stick or SHOT_TIMEOUT_MS cancel back to NORMAL (the TeleOp decides which inputs
  * cancel). With ShooterConstants.USE_ODOMETRY false, the same states run the old fixed shot
  * with no turning. All numbers are in Constants.
@@ -66,6 +67,7 @@ public class LiftShooter implements Subsystem {
     private final ElapsedTime loopTimer = new ElapsedTime();
     private final ElapsedTime shotTimer = new ElapsedTime();
     private final ElapsedTime feedTimer = new ElapsedTime();
+    private final ElapsedTime fireTimer = new ElapsedTime();
     private double firedMs = 0;
     private boolean fireNow = false;
 
@@ -123,7 +125,7 @@ public class LiftShooter implements Subsystem {
                 state = ShotState.AIM;
                 break;
             case AIM:
-                startFiring();
+                fireNow = true; // don't wait for aim or flywheel; still wait for the lift to be up
                 break;
             default:
                 break;
@@ -192,7 +194,8 @@ public class LiftShooter implements Subsystem {
                     if (fireNow ? liftThere : aimed && atSpeed && liftThere && slowEnough) startFiring();
                 } else {
                     feed();
-                    if (firedMs > FIRE_TIME_MS) {
+                    // FIRE_MAX_MS ends it even if FIRE_RECOVER_TPS kept pausing the feed (weak battery).
+                    if (firedMs > FIRE_TIME_MS || fireTimer.milliseconds() > FIRE_MAX_MS) {
                         shotStatus = "fired";
                         toNormal();
                         normal();
@@ -252,6 +255,7 @@ public class LiftShooter implements Subsystem {
         state = ShotState.FIRE;
         firedMs = 0;
         feedTimer.reset();
+        fireTimer.reset();
         shotStatus = fireNow ? "firing (fire now)" : "firing";
     }
 

@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.SubsytemOrganizer.Subsystem;
@@ -29,6 +30,8 @@ public class Flywheel implements Subsystem {
     private int tolerance;
     private boolean reversed = false; // direction = sign of the velocity
     private double sentVelocity = Double.NaN; // last velocity sent to the hub
+    private final ElapsedTime sinceSent = new ElapsedTime();
+    private static final double RESEND_MS = 500;
 
     @Override
     public void update() {
@@ -65,8 +68,13 @@ public class Flywheel implements Subsystem {
         return flywheelMotor.getVelocity();
     }
 
-    /** Target speed in ticks/sec, as last given to setSpeed(). Use getVelocity() for the measured speed. */
+    /** Measured velocity in ticks/sec, same as getVelocity(). For the target use getTargetSpeed(). */
     public double getSpeed() {
+        return flywheelMotor.getVelocity();
+    }
+
+    /** Target speed magnitude in ticks/sec, as last given to setSpeed() / setTarget(). */
+    public double getTargetSpeed() {
         return speed;
     }
 
@@ -96,9 +104,11 @@ public class Flywheel implements Subsystem {
 
     private void apply() {
         double target = getTargetVelocity();
-        if (target != sentVelocity) {
+        // Also re-send every RESEND_MS, in case the hub reset (brownout/ESD) and forgot the target.
+        if (target != sentVelocity || sinceSent.milliseconds() > RESEND_MS) {
             flywheelMotor.setVelocity(target);
             sentVelocity = target;
+            sinceSent.reset();
         }
     }
 

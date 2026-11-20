@@ -25,8 +25,8 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
  * (HOLD_TABLE_*, from the Lift Hold Finder), or PIDF.f when the table is empty, and none in the
  * bottom zone. Within HOLD_DEADBAND_TICKS of a finished move it holds on the feedforward alone.
  *
- * The bottom: it rests unpowered instead of stalling against the stop. Once it has rested there
- * REZERO_REST_MS it re-zeroes the encoder, so the lift doesn't have to start all the way down.
+ * The bottom: it rests unpowered instead of stalling against the stop. If it comes to rest there
+ * reading below 0 (it wasn't all the way down at Init), it re-zeroes the encoder.
  */
 @Configurable
 public class PIDControlledLift extends Lift {
@@ -121,7 +121,9 @@ public class PIDControlledLift extends Lift {
             controller.reset(); // fresh I and D once it has to correct again
             out = Range.clip(ff, -DOWN_POWER, UP_POWER);
         } else {
-            double ks = profiledTarget > BOTTOM_ZONE_TICKS ? Math.signum(error) * KS : 0;
+            // Friction push only outside a small band, so it can't flip +/- every time the error crosses 0.
+            double ks = profiledTarget > BOTTOM_ZONE_TICKS && Math.abs(error) > KS_MIN_ERROR_TICKS
+                    ? Math.signum(error) * KS : 0;
             out = controller.calculate(profiledTarget, current, ff + ks);
         }
 
@@ -199,7 +201,12 @@ public class PIDControlledLift extends Lift {
         return HOLD_TABLE_POWER[n - 1];
     }
 
-    /** Once it has sat still at the bottom for REZERO_REST_MS, call that position 0 (once per rest). */
+    /**
+     * Once it has sat still at the bottom for REZERO_REST_MS reading BELOW 0, call that position 0.
+     * Below 0 is proof the old zero was too high (e.g. the lift wasn't all the way down at Init).
+     * A lift resting a few ticks above 0 is left alone: zeroing there would creep the zero upward
+     * a little on every shot.
+     */
     private void rezeroIfResting(boolean atBottom, double current, double velocity) {
         if (targetPosition > BOTTOM_ZONE_TICKS) rezeroed = false;
         if (!atBottom || Math.abs(velocity) > STILL_TPS) {
@@ -210,7 +217,7 @@ public class PIDControlledLift extends Lift {
             resting = true;
             restTimer.reset();
         }
-        if (REZERO_AT_BOTTOM && !rezeroed && current != 0 && restTimer.milliseconds() > REZERO_REST_MS) {
+        if (REZERO_AT_BOTTOM && !rezeroed && current < 0 && restTimer.milliseconds() > REZERO_REST_MS) {
             resetEncoder();
             rezeroed = true;
         }

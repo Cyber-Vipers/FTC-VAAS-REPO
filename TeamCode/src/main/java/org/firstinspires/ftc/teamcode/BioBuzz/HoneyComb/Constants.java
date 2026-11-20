@@ -39,6 +39,8 @@ public final class Constants {
          * empty the lift and add a little.
          */
         public static double FIRE_TIME_MS = 1500;
+        /** A shot always ends this long after it starts firing, even if FIRE_RECOVER_TPS kept pausing it. */
+        public static double FIRE_MAX_MS = 3000;
         /** Give up on a shot that hasn't fired in this long (back to NORMAL). */
         public static double SHOT_TIMEOUT_MS = 5000;
 
@@ -99,12 +101,17 @@ public final class Constants {
         public static double[] HOLD_TABLE_POWER = {};
         /** Extra power toward the target to get past friction (the Hold Finder measures it). 0 = off. */
         public static double KS = 0;
+        /** KS only applies while the lift is further than this from where it should be. */
+        public static int KS_MIN_ERROR_TICKS = 10;
         /**
          * Profile finished and within this many ticks: hold with the feedforward only and stop
          * correcting, so the PID doesn't hunt in the slack. Must stay below TOLERANCE_TICKS. 0 = off.
          */
         public static int HOLD_DEADBAND_TICKS = 0;
-        /** Re-zero the encoder whenever the lift has rested at the bottom this long, so it needn't start down at Init. */
+        /**
+         * Re-zero the encoder when the lift has rested at the bottom this long reading below 0, i.e.
+         * it wasn't all the way down at Init. (Still: start it down when you can.)
+         */
         public static boolean REZERO_AT_BOTTOM = true;
         public static double REZERO_REST_MS = 300;
 
@@ -160,6 +167,14 @@ public final class Constants {
         public static double AIM_MAX_TURN = 0.7;
         /** Flip if the robot turns AWAY from the goal when aiming (depends on motor directions). */
         public static boolean AIM_TURN_REVERSED = false;
+
+        // ---- hardware setup ----
+        /**
+         * false = only the right motors reversed, as MecanumDrive always did (and every TeleOp up to
+         * 2026-11-18). fb0c1f6 also built a NeuronDrive in Teleop, whose constructor reverses the
+         * LEFT motors too; set this true only if the robot drives correctly that way.
+         */
+        public static boolean REVERSE_LEFT_MOTORS = false;
     }
 
     // ============================================================================================

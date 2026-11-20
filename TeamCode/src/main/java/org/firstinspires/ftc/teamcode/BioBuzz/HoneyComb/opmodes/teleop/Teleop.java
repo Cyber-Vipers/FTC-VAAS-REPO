@@ -21,7 +21,7 @@ import org.firstinspires.ftc.teamcode.neuronpathing.NeuronLocalizer;
  *   Y (hold)         outtake (also cancels a shot that is lining up)
  *   RT (press)       one-button shot: turns to the goal, sets lift + flywheel from the distance,
  *                    fires when ready, then back to normal (see LiftShooter)
- *   RT again         during a shot that's lining up: fire now
+ *   RT again         during a shot that's lining up: fire as soon as the lift is up
  *   Back             reset odometry: the robot must be on the alliance's reset spot
  *                    (FieldConstants.resetPose)
  *
@@ -72,8 +72,9 @@ public class Teleop extends OpMode {
         boolean turning = ShooterConstants.USE_ODOMETRY && Math.abs(gamepad1.right_stick_x) > STICK_CANCEL_DEADBAND;
 
         if (gamepad1.backWasPressed()) liftShooter.resetOdometry();
-        if (intakeHeld || outtakeHeld || turning) liftShooter.cancelShot();
-        if (rtPressed) liftShooter.shootPressed();
+        boolean cancelHeld = intakeHeld || outtakeHeld || turning;
+        if (cancelHeld) liftShooter.cancelShot();
+        else if (rtPressed) liftShooter.shootPressed(); // RT does nothing while a cancel input is held
         liftShooter.intakeHeld = intakeHeld;
         liftShooter.outtakeHeld = outtakeHeld;
 

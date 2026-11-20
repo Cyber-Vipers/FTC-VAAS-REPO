@@ -28,8 +28,11 @@ import java.util.Locale;
 @TeleOp(name = "HoneyComb Lift Hold Finder", group = "Honeycomb Tuning")
 public class LiftHoldFinder extends LinearOpMode {
     private static final double SETTLE_S = 1.5, SETTLE_MAX_S = 4, RAMP_MAX_S = 10;
+    /** The ramp never goes more than this far from the power that was holding the lift. */
+    private static final double RAMP_LIMIT = 0.4;
 
     private PIDControlledLift lift;
+    private String stopReason = "stopped with B";
 
     @Override
     public void runOpMode() {
@@ -70,6 +73,7 @@ public class LiftHoldFinder extends LinearOpMode {
             while (opModeIsActive()) {
                 lift.update();
                 telemetry.addLine("Stopped before finishing -- nothing saved. Lift going down.");
+                telemetry.addData("why", stopReason);
                 telemetry.update();
             }
             return;
@@ -121,7 +125,11 @@ public class LiftHoldFinder extends LinearOpMode {
         }
     }
 
-    /** Hold the target with the PID until it has been still there SETTLE_S. False if stopped. */
+    /**
+     * Hold the target with the PID until it has been still there SETTLE_S. False if stopped, or if
+     * it never got there (jammed, encoder unplugged, or not all the way down at Init) -- measuring
+     * from a stall would push the lift against a stop.
+     */
     private boolean settle(int target, String where) {
         lift.setTargetPosition(target);
         ElapsedTime total = new ElapsedTime(), there = new ElapsedTime();
@@ -131,8 +139,11 @@ public class LiftHoldFinder extends LinearOpMode {
             if (there.seconds() > SETTLE_S) return true;
             status(where, "settling", lift.power);
         }
-        // Didn't get within tolerance: measure from wherever it holds, unless stopped.
-        return opModeIsActive() && !gamepad1.b;
+        if (opModeIsActive() && !gamepad1.b) {
+            stopReason = String.format(Locale.US, "couldn't reach %d ticks (got to %.0f): check the lift was all the "
+                    + "way down at Init, its encoder cable, and HOLD_FINDER_TICKS", target, lift.getPosition());
+        }
+        return false;
     }
 
     /**
@@ -141,17 +152,25 @@ public class LiftHoldFinder extends LinearOpMode {
      * or it never moved.
      */
     private double ramp(int direction, String where) {
-        double power = lift.power;
+        double startPower = lift.power;
+        double power = startPower;
         double start = lift.getPosition();
         ElapsedTime timer = new ElapsedTime(), loop = new ElapsedTime();
         while (opModeIsActive() && !gamepad1.b && timer.seconds() < RAMP_MAX_S) {
             power += direction * HOLD_FINDER_RAMP * loop.seconds();
             loop.reset();
+            // Never more than RAMP_LIMIT away from where it started holding.
+            power = Math.max(startPower - RAMP_LIMIT, Math.min(startPower + RAMP_LIMIT, power));
             power = Math.max(-1, Math.min(1, power));
             lift.motorEx.setPower(power);
             double moved = lift.getPosition() - start;
             if (direction * moved > HOLD_FINDER_MOVE_TICKS) return power;
             status(where, direction > 0 ? "raising power until it creeps up" : "lowering power until it sags", power);
+        }
+        lift.motorEx.setPower(startPower);
+        if (opModeIsActive() && !gamepad1.b) {
+            stopReason = String.format(Locale.US, "the lift didn't %s within %.2f power of its hold -- check for a jam",
+                    direction > 0 ? "move up" : "move down", RAMP_LIMIT);
         }
         return Double.NaN;
     }

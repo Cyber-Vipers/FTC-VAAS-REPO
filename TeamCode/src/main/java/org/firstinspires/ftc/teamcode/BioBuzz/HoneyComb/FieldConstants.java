@@ -58,7 +58,9 @@ public class FieldConstants {
     public static Pose2D resetPose(Alliance alliance) {
         double x = HALF_FIELD_IN - ROBOT_HALF_WIDTH_IN;
         double y = HALF_FIELD_IN - ROBOT_HALF_LENGTH_IN;
-        // RED: far end of the red wall, facing the blue wall. BLUE: audience end of the blue wall, facing red.
+        // RED: far end of the red wall, facing the blue wall. BLUE: audience end of the blue wall, facing
+        // red. The two loading-zone corners are diagonal from each other, so these are NOT mirror images
+        // across the x axis. If your reset spot is somewhere else, change it here.
         return alliance == Alliance.RED ? new Pose2D(x, y, -Math.PI / 2) : new Pose2D(-x, -y, Math.PI / 2);
     }
 

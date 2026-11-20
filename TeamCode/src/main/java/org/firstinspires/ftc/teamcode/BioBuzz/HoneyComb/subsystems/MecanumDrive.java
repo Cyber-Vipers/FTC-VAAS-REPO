@@ -89,6 +89,9 @@ public class MecanumDrive implements Subsystem {
         backRight = hardwareMap.get(DcMotorEx.class, "backRight");
         frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
         backRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        DcMotorSimple.Direction left = REVERSE_LEFT_MOTORS ? DcMotorSimple.Direction.REVERSE : DcMotorSimple.Direction.FORWARD;
+        frontLeft.setDirection(left);
+        backLeft.setDirection(left);
         frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);

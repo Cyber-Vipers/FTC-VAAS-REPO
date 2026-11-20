@@ -38,9 +38,10 @@ import java.util.Locale;
  *   X / B            record a point / delete the last one
  *   Start            fit + save
  *   left stick btn   jump to the fit's prediction for this distance
- *   right stick btn  HAND MODE: lift and drivetrain go limp so you can push the lift to a
- *                    position and the robot to a spot by hand; both keep tracking. Press again
- *                    and the lift holds where you left it. Firing and recording work in hand mode.
+ *   right stick btn  HAND MODE: lift and drivetrain go limp and the flywheel stops, so you can
+ *                    push the lift to a position and the robot to a spot by hand; both keep
+ *                    tracking, and X records there. Press again and the lift holds where you left
+ *                    it; let the flywheel spin back up, then fire.
  *   LT (hold)        intake: flywheel spins in, transfer + intake pull in, lift stays put
  *   RT (hold)        stop the flywheel and transfer
  *   Back             reset odometry to the reset spot
@@ -58,12 +59,14 @@ public class HoneyCombShotTuner extends LinearOpMode {
         LiftShooter robot = new LiftShooter(hardwareMap, telemetry, drive, localizer);
         ShotTable table = robot.shotTable;
 
-        double liftTicks = ShooterConstants.FIXED_LIFT_TICKS;
-        double speedTps = ShooterConstants.FIXED_FLYWHEEL_TPS;
+        // Nothing moves on its own: the lift stays where it is (down) and the flywheel off until the
+        // dpad or the left stick button (jump to the fit's prediction) says otherwise.
+        double liftTicks = Range.clip(robot.lift.getPosition(), LiftConstants.LOWEST_TICKS, LiftConstants.HIGHEST_TICKS);
+        double speedTps = 0;
         boolean firing = false;
         double firedMs = 0;
         ElapsedTime feedTimer = new ElapsedTime();
-        String status = table.points.size() + " saved points loaded";
+        String status = table.points.size() + " saved points loaded. Left stick button = start from the fit's prediction";
 
         while (opModeInInit()) {
             if (gamepad1.xWasPressed()) robot.alliance = FieldConstants.Alliance.BLUE;
@@ -135,6 +138,13 @@ public class HoneyCombShotTuner extends LinearOpMode {
                 robot.liftTransfer.setReverse();
                 robot.liftTransfer.On();
             } else if (gamepad1.right_trigger >= TeleOpConstants.TRIGGER_THRESHOLD) {
+                firing = false;
+                robot.flywheel.setTarget(0);
+                robot.intake.Off();
+                robot.liftTransfer.Off();
+            } else if (handMode) {
+                // Hands are on the robot: flywheel and feed off. Press R3 again (the lift holds where
+                // you left it) and let the flywheel spin up before firing.
                 firing = false;
                 robot.flywheel.setTarget(0);
                 robot.intake.Off();

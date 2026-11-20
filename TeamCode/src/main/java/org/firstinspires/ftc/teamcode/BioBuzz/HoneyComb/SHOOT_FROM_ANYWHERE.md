@@ -12,7 +12,7 @@ when all three are ready. Every other control is the same as before. All numbers
 | LT (hold) | Intake, as before. Also cancels a shot that is lining up |
 | Y (hold) | Outtake, as before. Also cancels a shot that is lining up |
 | RT (press) | One-button shot: spin up, aim + lift, fire, back to normal |
-| RT again | During a shot that's lining up: fire now |
+| RT again | During a shot that's lining up: fire as soon as the lift is up, without waiting for aim or flywheel |
 | Right stick | Moving it cancels a shot that is lining up (the robot is turning itself then) |
 | Back | Reset odometry. The robot must be on the alliance's reset spot |
 | X / B during Init | Blue / red alliance |
@@ -26,6 +26,9 @@ The robot shoots the old fixed shot (935 / 2200) while turning to the goal until
 
 1. **Config:** add a "goBILDA Pinpoint Odometry Computer" named `pinpoint` on an I2C port. (The
    copied `drivers/GoBildaPinpointDriver.java` was removed: the SDK already has this driver.)
+   **Check the drive first:** this uses MecanumDrive's own motor directions (right side reversed),
+   as every TeleOp did up to 11-18. `fb0c1f6` also built a NeuronDrive in Teleop, which reverses the
+   left side too. If the robot only drives right that way, set `DriveConstants.REVERSE_LEFT_MOTORS = true`.
 2. **HoneyComb Localizer Test:** push forward -> x up, left -> y up, counter-clockwise -> heading up.
    Push 48 in along a tape (should read ~48), spin 5 turns in place (x/y should stay near 0). Fix
    `OdometryConstants` until both pass.
