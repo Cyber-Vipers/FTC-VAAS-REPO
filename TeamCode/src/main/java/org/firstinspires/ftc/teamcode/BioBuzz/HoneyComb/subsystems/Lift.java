@@ -18,12 +18,14 @@ public class Lift implements Subsystem {
     public DcMotorEx motorEx;
     private final Telemetry telemetry;
     private final int tolerance;
-    public static int highestPosition;
+    // Not static: a static list survived from one OpMode run to the next and grew on every Init,
+    // so get(0) was whatever the first OpMode since the app started saved.
+    public int highestPosition;
     private final int lowestPosition;
     public PIDFCoefficients pidf() {
         return motorEx.getPIDFCoefficients(DcMotor.RunMode.RUN_TO_POSITION);
     }
-    public static ArrayList<Integer> notablePositions = new ArrayList<>();
+    public final ArrayList<Integer> notablePositions = new ArrayList<>();
     public double getPosition() { return motorEx.getCurrentPosition();}
     protected int modifier = 40;
     @Override

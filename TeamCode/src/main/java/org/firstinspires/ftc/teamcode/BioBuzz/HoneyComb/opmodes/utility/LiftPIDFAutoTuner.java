@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
 
+import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.Constants;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.opmodes.teleop.LiftShooterTeleop;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.PIDControlledLift;
 
@@ -28,7 +29,8 @@ import java.util.List;
  *   4. Done: shows the numbers. A moves the lift between bottom and shooting position to check.
  *
  * I stays 0 - F holds the lift up, so I isn't needed.
- * Copy the result into LiftShooter's "liftPidf = new PIDFCoefficients(P, 0, D, F)".
+ * Copy the result into Constants.LiftConstants: "PIDF = new PIDFCoefficients(P, 0, D, F)".
+ * To hold every shooting position, not just this one, also run the Lift Hold Finder.
  */
 @Utility(name = "Honeycomb Lift PIDF Auto Tuner")
 public class LiftPIDFAutoTuner extends LinearOpMode {
@@ -72,6 +74,7 @@ public class LiftPIDFAutoTuner extends LinearOpMode {
         }
         lift = new PIDControlledLift(hardwareMap, telemetry, LiftShooterTeleop.globalTolerance,
                 HIGHEST_LIFT, LOWEST_LIFT, false, gains);
+        lift.useHoldTable = false; // this tuner measures a single F; the hold table would override it
         lift.resetEncoder();
         lift.saveNotablePosition(LiftShooterTeleop.shootingPosition);
         target = lift.notablePositions.get(SHOOTING_POSITION_INDEX);
@@ -159,7 +162,7 @@ public class LiftPIDFAutoTuner extends LinearOpMode {
             telemetry.addData("Time to reach", "%.2f s, overshoot %.0f ticks", fin.settleS, fin.overshoot);
             telemetry.addData("Hold error / wobble", "%.1f / %.1f ticks", fin.steadyErr, fin.wobble);
             telemetry.addData("Fastest landing", "%.0f ticks/s (limit at bottom %.0f)",
-                    maxLandingSpeed, PIDControlledLift.LANDING_SPEED);
+                    maxLandingSpeed, Constants.LiftConstants.LANDING_SPEED_TPS);
             telemetry.addLine();
             telemetry.addData("A: move to", atShooting ? "bottom" : "shooting position");
             telemetry.update();
