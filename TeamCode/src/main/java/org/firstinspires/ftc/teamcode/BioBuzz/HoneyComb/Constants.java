@@ -134,7 +134,7 @@ public final class Constants {
         /** Within this many TPS of the target counts as "at speed". */
         public static int AT_SPEED_TOLERANCE_TPS = 130;
         /** Velocity PIDF for the hub's built-in controller, from the Flywheel PIDF Auto Tuner. */
-        public static PIDFCoefficients PIDF = new PIDFCoefficients(8.737, 0, 0.507, 11.649);
+        public static PIDFCoefficients PIDF = new PIDFCoefficients(8.509, 0, 0, 11.661); // from d5da670 "fixed PIDF"
         /** Top speed. 32767 / F = 32767 / 12.701 = 2580 TPS; re-measure if the motor or gearing changes. */
         public static int MAX_TPS = 2580;
         public static final String NAME = "flywheel";
