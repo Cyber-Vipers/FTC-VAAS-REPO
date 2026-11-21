@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
+import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.Constants.IntakeConstants;
 import org.firstinspires.ftc.teamcode.SubsytemOrganizer.Subsystem;
 
 import java.util.concurrent.TimeUnit;
@@ -38,15 +39,14 @@ public class ToggledMotor implements Subsystem {
         voltageIgnored = true;
     }
 
+    /**
+     * Turns the motor off when it's over the current alert (IntakeConstants.CURRENT_LIMIT_MA, set
+     * once in the constructor). Setting the alert and reading getCurrent() every loop were extra
+     * hub calls; read getCurrent() only while testing.
+     */
     public void voltageControl() {
-        telemetry.addData("Motor Current", motorEx.getCurrent(CurrentUnit.MILLIAMPS));
-        telemetry.addData("Is Over Current", motorEx.isOverCurrent());
-        motorEx.setCurrentAlert(5000, CurrentUnit.MILLIAMPS);
         if (motorEx.isOverCurrent()) {
-            telemetry.addLine("RUNNING");
-            motorEx.setPower(0);
             Off();
-            return;
         }
     }
     public void On() {
@@ -56,7 +56,6 @@ public class ToggledMotor implements Subsystem {
 //            }
 //            //Delay until cooldown
 //        } else {
-        telemetry.addLine("Turning On");
             isOn = true;
             motorEx.setPower(1);
 //        }
@@ -69,7 +68,6 @@ public class ToggledMotor implements Subsystem {
 //            }
 //            //Delay until cooldown
 //        } else {
-        telemetry.addLine("TURNING OFF");
             isOn = false;
             motorEx.setPower(0);
 //        }
@@ -121,15 +119,19 @@ public class ToggledMotor implements Subsystem {
     }
     public ToggledMotor(HardwareMap hardwareMap, Telemetry telemetry,String motorName) {
         motorEx = hardwareMap.get(DcMotorEx.class,motorName);
+        motorEx.setCurrentAlert(IntakeConstants.CURRENT_LIMIT_MA, CurrentUnit.MILLIAMPS);
         this.motorName = motorName;
         this.telemetry = telemetry;
     }
     public ToggledMotor(HardwareMap hardwareMap, Telemetry telemetry, String motorName, double cooldown, TimeUnit timeUnit) {
-        this.motorName = motorName;
-        motorEx = hardwareMap.get(DcMotorEx.class,motorName);
+        this(hardwareMap, telemetry, motorName);
         hasCooldown = true;
         motorCooldown = timeUnit.toMillis((long) cooldown);
-        this.telemetry = telemetry;
+    }
+
+    /** Motor current in mA. A separate hub call each time (not in the bulk read), so use it for testing. */
+    public double getCurrentMa() {
+        return motorEx.getCurrent(CurrentUnit.MILLIAMPS);
     }
 
 

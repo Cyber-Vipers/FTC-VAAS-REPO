@@ -5,11 +5,18 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.SubsytemOrganizer.Subsystem;
 
+/**
+ * Flywheel on the hub's built-in velocity PIDF. Speeds are encoder ticks per second.
+ *
+ * The hub is only sent a new velocity when the signed target actually changes: unlike
+ * setPower(), setVelocity() goes to the hub on every call, and setting it several times a
+ * loop to different values made the flywheel briefly chase each of them.
+ */
 @Configurable
 public class Flywheel implements Subsystem {
 
@@ -22,6 +29,9 @@ public class Flywheel implements Subsystem {
     private int speed = 0;            // magnitude only, ticks/sec
     private int tolerance;
     private boolean reversed = false; // direction = sign of the velocity
+    private double sentVelocity = Double.NaN; // last velocity sent to the hub
+    private final ElapsedTime sinceSent = new ElapsedTime();
+    private static final double RESEND_MS = 500;
 
     @Override
     public void update() {
@@ -34,9 +44,18 @@ public class Flywheel implements Subsystem {
         apply();
     }
 
+    /**
+     * Speed AND direction at once (+ = forward, - = reverse), so changing both sends the hub one
+     * command instead of a brief wrong one in between.
+     */
+    public void setTarget(int signedSpeed) {
+        reversed = signedSpeed < 0;
+        speed = Math.abs(signedSpeed);
+        apply();
+    }
+
     /** Signed target velocity in ticks/sec. */
     public double getTargetVelocity() {
-        telemetry.addData("Target Velocity", reversed ? -speed : speed);
         return reversed ? -speed : speed;
     }
 
@@ -49,9 +68,14 @@ public class Flywheel implements Subsystem {
         return flywheelMotor.getVelocity();
     }
 
-    /** Velocity in degrees or radians per second. Don't compare this with setSpeed values. */
+    /** Measured velocity in ticks/sec, same as getVelocity(). For the target use getTargetSpeed(). */
     public double getSpeed() {
         return flywheelMotor.getVelocity();
+    }
+
+    /** Target speed magnitude in ticks/sec, as last given to setSpeed() / setTarget(). */
+    public double getTargetSpeed() {
+        return speed;
     }
 
     public boolean isReversed() {
@@ -79,7 +103,18 @@ public class Flywheel implements Subsystem {
     }
 
     private void apply() {
-        flywheelMotor.setVelocity(getTargetVelocity());
+        double target = getTargetVelocity();
+        // Also re-send every RESEND_MS, in case the hub reset (brownout/ESD) and forgot the target.
+        if (target != sentVelocity || sinceSent.milliseconds() > RESEND_MS) {
+            flywheelMotor.setVelocity(target);
+            sentVelocity = target;
+            sinceSent.reset();
+        }
+    }
+
+    public void addTelemetry(Telemetry telemetry) {
+        telemetry.addData("flywheel (ticks/s)", "%.0f -> %.0f%s", getVelocity(), getTargetVelocity(),
+                isUp2Speed() ? "  at speed" : "");
     }
 
     public void setPidfCoefficients(PIDFCoefficients pidfCoefficients) {

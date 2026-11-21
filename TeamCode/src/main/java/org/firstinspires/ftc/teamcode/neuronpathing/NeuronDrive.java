@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.neuronpathing;
 
 import static org.firstinspires.ftc.teamcode.neuronpathing.MathFunc.angleWrap;
 
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -82,10 +83,10 @@ public class NeuronDrive {
         this.localizer = localizer;
         this.trackWidth = trackWidthIn;
 
-        frontLeft = hwMap.get(DcMotorEx.class, frontLeftName);
-        frontRight = hwMap.get(DcMotorEx.class, frontRightName);
-        backLeft = hwMap.get(DcMotorEx.class, backLeftName);
-        backRight = hwMap.get(DcMotorEx.class, backRightName);
+        frontLeft = hwMap.get(DcMotorEx.class, "frontLeft");
+        frontRight = hwMap.get(DcMotorEx.class, "frontRight");
+        backLeft = hwMap.get(DcMotorEx.class, "backLeft");
+        backRight = hwMap.get(DcMotorEx.class, "backRight");
 
         for (DcMotorEx motor : new DcMotorEx[]{frontLeft, frontRight, backLeft, backRight}) {
             motor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
@@ -94,8 +95,11 @@ public class NeuronDrive {
         }
 
         // Standard goBILDA/REV mecanum wiring: left side motors reversed.
-        frontLeft.setDirection(DcMotorEx.Direction.REVERSE);
-        backLeft.setDirection(DcMotorEx.Direction.REVERSE);
+        frontLeft.setDirection(DcMotor.Direction.REVERSE);
+        frontRight.setDirection(DcMotor.Direction.FORWARD);
+        backLeft.setDirection(DcMotor.Direction.FORWARD);
+        backRight.setDirection(DcMotor.Direction.REVERSE);
+
     }
 
     /** Convenience constructor with the common "frontLeft/frontRight/backLeft/backRight" hardware config names. */
