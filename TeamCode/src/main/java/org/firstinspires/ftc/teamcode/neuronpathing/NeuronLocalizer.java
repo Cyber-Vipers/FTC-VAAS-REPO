@@ -23,6 +23,8 @@ public class NeuronLocalizer {
     public final GoBildaPinpointDriver pinpoint;
     private boolean calibrated = false;
 
+
+
     public NeuronLocalizer(HardwareMap hwMap, Telemetry telemetry, String deviceName,
                             double xOffsetMm, double yOffsetMm,
                             GoBildaPinpointDriver.GoBildaOdometryPods podType,
@@ -31,7 +33,10 @@ public class NeuronLocalizer {
         this.telemetry = telemetry;
         pinpoint = hwMap.get(GoBildaPinpointDriver.class, deviceName);
 
-        pinpoint.setOffsets(xOffsetMm, yOffsetMm, DistanceUnit.MM);
+         xOffsetMm = -4;
+         yOffsetMm = 0;
+
+        pinpoint.setOffsets(xOffsetMm, yOffsetMm, DistanceUnit.INCH);
         pinpoint.setEncoderResolution(podType);
         pinpoint.setEncoderDirections(xEncoderDirection, yEncoderDirection);
     }

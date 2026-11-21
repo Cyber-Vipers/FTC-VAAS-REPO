@@ -25,6 +25,8 @@ public class MecanumDrive implements Subsystem {
 
     private boolean turnOverridden = false;
     private double turnOverride = 0;
+    private boolean isAuto = false;
+
     private boolean coast = false;
 
     @Override
@@ -33,9 +35,16 @@ public class MecanumDrive implements Subsystem {
             setPowers(0, 0, 0, 0);
             return;
         }
-        double forward = gamepad.left_stick_y;
-        double strafe = -gamepad.left_stick_x * STRAFE_FACTOR;
-        double rotate = -gamepad.right_stick_x;
+        double forward = 0;
+        double strafe = 0;
+        double rotate = 0;
+        if (!isAuto) {
+
+
+            forward = gamepad.left_stick_y;
+            strafe = -gamepad.left_stick_x * STRAFE_FACTOR;
+            rotate = -gamepad.right_stick_x;
+        }
         if (gamepad.left_bumper) {
             forward *= SLOW_MULTIPLIER;
             strafe *= SLOW_MULTIPLIER;
@@ -97,6 +106,23 @@ public class MecanumDrive implements Subsystem {
         backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         this.gamepad = gamepad;
+    }
+    public MecanumDrive(HardwareMap hardwareMap, Telemetry telemetry,Gamepad gamepad, boolean isAuto) {
+        frontRight = hardwareMap.get(DcMotorEx.class,"frontRight");
+        frontLeft = hardwareMap.get(DcMotorEx.class, "frontLeft");
+        backLeft = hardwareMap.get(DcMotorEx.class, "backLeft");
+        backRight = hardwareMap.get(DcMotorEx.class, "backRight");
+        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        DcMotorSimple.Direction left = REVERSE_LEFT_MOTORS ? DcMotorSimple.Direction.REVERSE : DcMotorSimple.Direction.FORWARD;
+        frontLeft.setDirection(left);
+        backLeft.setDirection(left);
+        frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        this.gamepad = gamepad;
+        this.isAuto = isAuto;
     }
 
     public MecanumDrive(HardwareMap hardwareMap, Telemetry telemetry,Gamepad gamepad, String frontRightName, String frontLeftName, String backLeftName, String backRightName) {

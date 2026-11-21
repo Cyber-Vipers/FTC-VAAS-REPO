@@ -34,7 +34,7 @@ public class Teleop extends OpMode {
     MecanumDrive mecanumDrive;
     NeuronLocalizer localizer;
     private boolean rtWasDown = false;
-
+    //NOTE FOR FUTURE MICAH, TRACKWIDTH IS 16.1
     @Override
     public void init() {
         mecanumDrive = new MecanumDrive(hardwareMap, telemetry, gamepad1);

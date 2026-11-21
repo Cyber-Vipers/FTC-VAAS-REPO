@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems;
 import static org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.Constants.ShooterConstants.*;
 
 import com.qualcomm.hardware.lynx.LynxModule;
+import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -13,6 +14,7 @@ import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.Constants.LiftConstants;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.Constants.OdometryConstants;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.FieldConstants;
 import org.firstinspires.ftc.teamcode.SubsytemOrganizer.Subsystem;
+import org.firstinspires.ftc.teamcode.neuronpathing.NeuronDrive;
 import org.firstinspires.ftc.teamcode.neuronpathing.NeuronLocalizer;
 import org.firstinspires.ftc.teamcode.neuronpathing.Pose2D;
 
@@ -50,7 +52,7 @@ public class LiftShooter implements Subsystem {
     public final GoalAim aim;
     public ShotTable shotTable;
     private final List<LynxModule> hubs;
-
+    private NeuronDrive neuronDrive;
     public FieldConstants.Alliance alliance = FieldConstants.Alliance.RED;
     public ShotState state = ShotState.NORMAL;
 
@@ -93,6 +95,29 @@ public class LiftShooter implements Subsystem {
         shotTable = ShotTable.load();
     }
 
+
+    public LiftShooter(HardwareMap hardwareMap, Telemetry telemetry, NeuronDrive drive, NeuronLocalizer localizer) {
+        // MANUAL bulk caching: beginLoop() clears the cache once per loop, so each hub does ONE
+        // bulk read per loop however often a position or velocity is read. (AUTO starts a new
+        // bulk read whenever the same value is read twice, which happens all the time here.)
+        hubs = hardwareMap.getAll(LynxModule.class);
+        for (LynxModule hub : hubs) hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
+
+        this.neuronDrive = drive;
+        this.localizer = localizer;
+        this.drive = new MecanumDrive(hardwareMap,telemetry,new Gamepad(),true);
+        aim = new GoalAim(this.drive, localizer);
+        flywheel = new Flywheel(hardwareMap, telemetry, FlywheelConstants.PIDF, FlywheelConstants.NAME,
+                FlywheelConstants.AT_SPEED_TOLERANCE_TPS);
+        intake = new ToggledMotor(hardwareMap, telemetry, IntakeConstants.INTAKE_NAME);
+        liftTransfer = new ToggledMotor(hardwareMap, telemetry, IntakeConstants.TRANSFER_NAME);
+        lift = new PIDControlledLift(hardwareMap, telemetry, LiftConstants.TOLERANCE_TICKS,
+                LiftConstants.HIGHEST_TICKS, LiftConstants.LOWEST_TICKS, LiftConstants.REVERSED, LiftConstants.PIDF);
+        lift.resetEncoder(); // assumes it's down; if not, it re-zeroes once it has come to rest at the bottom
+        intakeLift = new toggledServo(hardwareMap, telemetry, IntakeConstants.INTAKE_LIFT_UP,
+                IntakeConstants.INTAKE_LIFT_DOWN, IntakeConstants.INTAKE_LIFT_NAME, true, true);
+        shotTable = ShotTable.load();
+    }
     /** The Pinpoint localizer with the pod settings from Constants.OdometryConstants. */
     public static NeuronLocalizer createLocalizer(HardwareMap hardwareMap, Telemetry telemetry) {
         return new NeuronLocalizer(hardwareMap, telemetry, OdometryConstants.NAME,

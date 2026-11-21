@@ -97,8 +97,8 @@ public final class Constants {
          * the HoneyComb Lift Hold Finder. Straight lines in between, flat past the ends. Ticks must
          * go up. Fewer than 2 points = use PIDF.f everywhere (a straight slide only needs that).
          */
-        public static double[] HOLD_TABLE_TICKS = {};
-        public static double[] HOLD_TABLE_POWER = {};
+        public static double[] HOLD_TABLE_TICKS = {137,425,749,1100,1436};
+        public static double[] HOLD_TABLE_POWER = {0.168,0.178,0.132,0.007,-0.121};
         /** Extra power toward the target to get past friction (the Hold Finder measures it). 0 = off. */
         public static double KS = 0;
         /** KS only applies while the lift is further than this from where it should be. */
@@ -134,7 +134,7 @@ public final class Constants {
         /** Within this many TPS of the target counts as "at speed". */
         public static int AT_SPEED_TOLERANCE_TPS = 130;
         /** Velocity PIDF for the hub's built-in controller, from the Flywheel PIDF Auto Tuner. */
-        public static PIDFCoefficients PIDF = new PIDFCoefficients(16.892, 0, 0.507, 12.701);
+        public static PIDFCoefficients PIDF = new PIDFCoefficients(8.737, 0, 0.507, 11.649);
         /** Top speed. 32767 / F = 32767 / 12.701 = 2580 TPS; re-measure if the motor or gearing changes. */
         public static int MAX_TPS = 2580;
         public static final String NAME = "flywheel";
@@ -189,7 +189,7 @@ public final class Constants {
         public static double X_POD_OFFSET_MM = 145, Y_POD_OFFSET_MM = 35.7;
         public static GoBildaPinpointDriver.GoBildaOdometryPods POD_TYPE = GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD;
         /** Pushing the robot forward must make x go UP, and pushing it left must make y go UP. */
-        public static GoBildaPinpointDriver.EncoderDirection X_POD_DIRECTION = GoBildaPinpointDriver.EncoderDirection.FORWARD;
+        public static GoBildaPinpointDriver.EncoderDirection X_POD_DIRECTION = GoBildaPinpointDriver.EncoderDirection.REVERSED;
         public static GoBildaPinpointDriver.EncoderDirection Y_POD_DIRECTION = GoBildaPinpointDriver.EncoderDirection.REVERSED;
         public static final String NAME = "pinpoint";
     }

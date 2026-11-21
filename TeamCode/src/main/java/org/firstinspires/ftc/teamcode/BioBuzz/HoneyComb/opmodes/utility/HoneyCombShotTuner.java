@@ -50,14 +50,14 @@ import java.util.Locale;
 @TeleOp(name = "HoneyComb Shot Tuner", group = "Honeycomb Tuning")
 public class HoneyCombShotTuner extends LinearOpMode {
     public static int LIFT_STEP = 25, LIFT_FINE_STEP = 5, SPEED_STEP = 50, SPEED_FINE_STEP = 10;
-
+    public static ShotTable table;
     @Override
     public void runOpMode() {
         MecanumDrive drive = new MecanumDrive(hardwareMap, telemetry, gamepad1);
         NeuronLocalizer localizer = LiftShooter.createLocalizer(hardwareMap, telemetry);
         localizer.calibrate(true); // odometry starts at 0,0: press Back on the reset spot
         LiftShooter robot = new LiftShooter(hardwareMap, telemetry, drive, localizer);
-        ShotTable table = robot.shotTable;
+        table = robot.shotTable;
 
         // Nothing moves on its own: the lift stays where it is (down) and the flywheel off until the
         // dpad or the left stick button (jump to the fit's prediction) says otherwise.
@@ -76,7 +76,7 @@ public class HoneyCombShotTuner extends LinearOpMode {
             telemetry.addData("status", status);
             telemetry.update();
         }
-
+        robot.intakeLift.moveDown();
         while (opModeIsActive()) {
             Pose2D pose = robot.beginLoop(); // bulk read + the one Pinpoint read
 
@@ -169,6 +169,7 @@ public class HoneyCombShotTuner extends LinearOpMode {
                 } else {
                     robot.intake.setReverse();
                     robot.intake.On();
+                    robot.intakeLift.moveDown();
                     robot.liftTransfer.setForward();
                     if (recovering) {
                         robot.liftTransfer.Off();
