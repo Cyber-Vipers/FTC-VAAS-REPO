@@ -204,5 +204,7 @@ public final class Constants {
         public static double TRIGGER_THRESHOLD = 0.2;
         /** Moving the right stick further than this cancels a shot that is lining up. */
         public static double STICK_CANCEL_DEADBAND = 0.3;
+        /** Show the FIELD DEBUG telemetry block (odometry, reset, CELL choice, aim). */
+        public static boolean SHOW_FIELD_DEBUG = true;
     }
 }

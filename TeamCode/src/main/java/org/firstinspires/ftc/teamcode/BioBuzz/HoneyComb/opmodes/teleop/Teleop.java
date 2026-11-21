@@ -9,7 +9,9 @@ import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.Constants.ShooterConstan
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.FieldConstants;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.LiftShooter;
 import org.firstinspires.ftc.teamcode.BioBuzz.HoneyComb.subsystems.MecanumDrive;
+import org.firstinspires.ftc.teamcode.neuronpathing.MathFunc;
 import org.firstinspires.ftc.teamcode.neuronpathing.NeuronLocalizer;
+import org.firstinspires.ftc.teamcode.neuronpathing.Pose2D;
 
 /**
  * HoneyComb match TeleOp, all on gamepad 1:
@@ -34,6 +36,9 @@ public class Teleop extends OpMode {
     MecanumDrive mecanumDrive;
     NeuronLocalizer localizer;
     private boolean rtWasDown = false;
+    // Field debug: what the last Back press did.
+    private int resetCount = 0;
+    private Pose2D resetSent = null, resetReadBack = null;
     //NOTE FOR FUTURE MICAH, TRACKWIDTH IS 16.1
     @Override
     public void init() {
@@ -71,7 +76,12 @@ public class Teleop extends OpMode {
         // Only cancel on the right stick when the robot is turning itself (it isn't in the fixed shot).
         boolean turning = ShooterConstants.USE_ODOMETRY && Math.abs(gamepad1.right_stick_x) > STICK_CANCEL_DEADBAND;
 
-        if (gamepad1.backWasPressed()) liftShooter.resetOdometry();
+        if (gamepad1.backWasPressed()) {
+            liftShooter.resetOdometry();
+            resetCount++;
+            resetSent = FieldConstants.resetPose(liftShooter.alliance);
+            resetReadBack = liftShooter.pose; // resetOdometry() re-reads the Pinpoint right after setting it
+        }
         boolean cancelHeld = intakeHeld || outtakeHeld || turning;
         if (cancelHeld) liftShooter.cancelShot();
         else if (rtPressed) liftShooter.shootPressed(); // RT does nothing while a cancel input is held
@@ -82,6 +92,57 @@ public class Teleop extends OpMode {
         mecanumDrive.update();
 
         liftShooter.addTelemetry(telemetry);
+        if (SHOW_FIELD_DEBUG) addFieldDebug();
         telemetry.update();
+    }
+
+    /**
+     * Everything that decides where the robot aims, in the order the code uses it:
+     * Pinpoint health -> pose -> last Back reset -> which side of the CELL switch line -> both
+     * CELLs -> the one picked -> heading to it vs the robot's heading.
+     */
+    private void addFieldDebug() {
+        Pose2D p = liftShooter.pose;
+        FieldConstants.Alliance a = liftShooter.alliance;
+        double dx = p.x - FieldConstants.FIELD_CENTER_X_IN;
+        double dy = p.y - FieldConstants.FIELD_CENTER_Y_IN;
+        double band = FieldConstants.CELL_SWITCH_BAND_IN;
+
+        telemetry.addLine();
+        telemetry.addLine("===== FIELD DEBUG =====");
+        telemetry.addData("pinpoint", "%s, %.0f Hz, calibrated %s",
+                localizer.pinpoint.getDeviceStatus(), localizer.pinpoint.getFrequency(), localizer.isCalibrated());
+        telemetry.addData("pose (odometry)", "x %.1f  y %.1f  h %.1f°", p.x, p.y, Math.toDegrees(p.h));
+        telemetry.addData("from field center", "dx %+.1f  dy %+.1f  (center %.0f, %.0f)",
+                dx, dy, FieldConstants.FIELD_CENTER_X_IN, FieldConstants.FIELD_CENTER_Y_IN);
+        telemetry.addData("velocity", "x %+.1f  y %+.1f in/s   (drive forward/strafe and watch which one moves)",
+                localizer.velX(), localizer.velY());
+
+        if (resetCount == 0) {
+            telemetry.addData("Back resets", "none yet -- press Back at the center facing %.0f°",
+                    FieldConstants.RESET_HEADING_DEG);
+        } else {
+            telemetry.addData("Back resets", "%d. sent x %.1f y %.1f h %.0f° -> read back x %.1f y %.1f h %.0f°",
+                    resetCount, resetSent.x, resetSent.y, Math.toDegrees(resetSent.h),
+                    resetReadBack.x, resetReadBack.y, Math.toDegrees(resetReadBack.h));
+        }
+
+        String side = dx > band ? "SCORING side (dx > +" + band + ")"
+                : dx < -band ? "AUDIENCE side (dx < -" + band + ")"
+                : "inside ±" + band + " band: keeps last CELL";
+        telemetry.addData("CELL switch", "on X only: %s   (AUTO_CELL %s; y is ignored)",
+                side, FieldConstants.AUTO_CELL);
+
+        FieldConstants.Cell cell = FieldConstants.targetCell(p, a);
+        Pose2D scoring = FieldConstants.cellPosition(FieldConstants.Cell.SCORING, a);
+        Pose2D audience = FieldConstants.cellPosition(FieldConstants.Cell.AUDIENCE, a);
+        telemetry.addData("CELLs (" + a + " HIVE)", "SCORING x %.1f y %.1f | AUDIENCE x %.1f y %.1f",
+                scoring.x, scoring.y, audience.x, audience.y);
+        telemetry.addData("aiming at", "%s CELL, %.1f in away", cell, FieldConstants.distanceToGoal(p, a));
+
+        double want = FieldConstants.headingToGoal(p, a);
+        telemetry.addData("heading", "robot %.1f°  wants %.1f°  error %+.1f°  (aim %s)",
+                Math.toDegrees(p.h), Math.toDegrees(want), Math.toDegrees(MathFunc.angleWrap(want - p.h)),
+                liftShooter.aim.isActive() ? "turning" : "idle");
     }
 }

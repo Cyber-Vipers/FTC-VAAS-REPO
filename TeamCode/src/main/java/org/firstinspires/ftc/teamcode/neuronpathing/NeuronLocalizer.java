@@ -113,6 +113,11 @@ public class NeuronLocalizer {
         }
     }
 
+    /** True once calibrate() saw the Pinpoint report READY. */
+    public boolean isCalibrated() {
+        return calibrated;
+    }
+
     private void warnIfNotCalibrated() {
         if (!calibrated && telemetry != null) {
             telemetry.log().add("Neuron Pathing: reading Pinpoint pose before calibrate() was called");
