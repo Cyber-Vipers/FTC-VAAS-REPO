@@ -237,9 +237,7 @@ public class LiftShooterTeleop extends OpMode {
         intake.Off();
         intake.setForward();
         intakeLift.nudgeDown();
-        flywheel.setSpeed(0);
-        flywheel.forward();
-        flywheel.setSpeed(shootSpeed);
+        flywheel.setTarget(shootSpeed); // one command: setSpeed(0) first sent the hub a 0 every loop
     }
 
     public void flower() {
