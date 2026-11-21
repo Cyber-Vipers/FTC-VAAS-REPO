@@ -33,10 +33,7 @@ public class NeuronLocalizer {
         this.telemetry = telemetry;
         pinpoint = hwMap.get(GoBildaPinpointDriver.class, deviceName);
 
-         xOffsetMm = -4;
-         yOffsetMm = 0;
-
-        pinpoint.setOffsets(xOffsetMm, yOffsetMm, DistanceUnit.INCH);
+        pinpoint.setOffsets(xOffsetMm, yOffsetMm, DistanceUnit.MM);
         pinpoint.setEncoderResolution(podType);
         pinpoint.setEncoderDirections(xEncoderDirection, yEncoderDirection);
     }

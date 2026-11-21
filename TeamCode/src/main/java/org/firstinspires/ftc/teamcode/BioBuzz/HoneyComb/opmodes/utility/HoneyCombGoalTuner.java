@@ -118,9 +118,11 @@ public class HoneyCombGoalTuner extends LinearOpMode {
                 if (sightings.size() >= 3) {
                     telemetry.addData("miss (RMS)", "%.1f in -- lines' average distance from the estimate", estimate.h);
                 }
+                double fromCenterX = estimate.x - FieldConstants.FIELD_CENTER_X_IN;
+                double fromCenterY = estimate.y - FieldConstants.FIELD_CENTER_Y_IN;
                 telemetry.addLine(String.format(Locale.US,
                         "copy into FieldConstants:  HIVE_SIDE_IN = %.1f;  CELL_OFFSET_IN = %.1f;  (%s CELL was up)",
-                        Math.abs(estimate.y), Math.abs(estimate.x), estimate.x >= 0 ? "SCORING" : "AUDIENCE"));
+                        Math.abs(fromCenterY), Math.abs(fromCenterX), fromCenterX >= 0 ? "SCORING" : "AUDIENCE"));
             } else if (sightings.size() >= 2) {
                 telemetry.addLine("estimate: none -- sightings are (nearly) parallel");
             }

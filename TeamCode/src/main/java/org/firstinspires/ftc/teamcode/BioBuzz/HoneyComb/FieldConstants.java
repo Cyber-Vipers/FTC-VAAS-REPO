@@ -8,10 +8,11 @@ import org.firstinspires.ftc.teamcode.neuronpathing.Pose2D;
 /**
  * Field positions, in the same coordinates NeuronLocalizer reports (inches, radians).
  *
- * Field frame: the Neuron Path Planner's, so poses drawn there can go straight into odometry.
- * Origin at the field center:
+ * Field frame: the Neuron Path Planner's, so auto poses go straight into odometry. Its origin is
+ * NOT the field center: the center is at (FIELD_CENTER_X_IN, FIELD_CENTER_Y_IN). Every position
+ * below (goals, reset spot, the CELL switch line) is measured from that center:
  *   +x  away from the audience (toward the "scoring" side of the HIVE)
- *   +y  toward the RED alliance wall; the blue wall is at y = -HALF_FIELD_IN
+ *   +y  toward the RED alliance wall
  *   heading 0 = facing +x, counter-clockwise positive
  * Red and blue mirror across the x axis (y -> -y, heading -> -heading).
  *
@@ -29,7 +30,10 @@ public class FieldConstants {
     /** Field center to the inside of a perimeter wall. */
     public static double HALF_FIELD_IN = 70.5;
 
-    /** Each HIVE's pivot: red at y = +HIVE_SIDE_IN, blue at y = -HIVE_SIDE_IN, both on x = 0. */
+    /** Where the middle of the field is in odometry (Path Planner) coordinates. */
+    public static double FIELD_CENTER_X_IN = 63, FIELD_CENTER_Y_IN = 63;
+
+    /** Each HIVE's pivot, from the field center: red at y = +HIVE_SIDE_IN, blue at -HIVE_SIDE_IN, both on x = 0. */
     public static double HIVE_SIDE_IN = 13.5;
     /** Each CELL's distance from its HIVE's pivot, toward the scoring side (+x) or audience side (-x). */
     public static double CELL_OFFSET_IN = 18.8 / 2;
@@ -61,15 +65,18 @@ public class FieldConstants {
         // RED: far end of the red wall, facing the blue wall. BLUE: audience end of the blue wall, facing
         // red. The two loading-zone corners are diagonal from each other, so these are NOT mirror images
         // across the x axis. If your reset spot is somewhere else, change it here.
-        return alliance == Alliance.RED ? new Pose2D(x, y, -Math.PI / 2) : new Pose2D(-x, -y, Math.PI / 2);
+        return alliance == Alliance.RED
+                ? new Pose2D(FIELD_CENTER_X_IN + x, FIELD_CENTER_Y_IN + y, -Math.PI / 2)
+                : new Pose2D(FIELD_CENTER_X_IN - x, FIELD_CENTER_Y_IN - y, Math.PI / 2);
     }
 
     /** The CELL to shoot at from here (see AUTO_CELL). */
     public static Cell targetCell(Pose2D robot, Alliance alliance) {
         if (!AUTO_CELL) return alliance == Alliance.RED ? redUpCell : blueUpCell;
         Cell cell = alliance == Alliance.RED ? redAutoCell : blueAutoCell;
-        if (robot.x > CELL_SWITCH_BAND_IN) cell = Cell.SCORING;
-        else if (robot.x < -CELL_SWITCH_BAND_IN) cell = Cell.AUDIENCE;
+        double xFromCenter = robot.x - FIELD_CENTER_X_IN;
+        if (xFromCenter > CELL_SWITCH_BAND_IN) cell = Cell.SCORING;
+        else if (xFromCenter < -CELL_SWITCH_BAND_IN) cell = Cell.AUDIENCE;
         if (alliance == Alliance.RED) redAutoCell = cell; else blueAutoCell = cell;
         return cell;
     }
@@ -77,7 +84,7 @@ public class FieldConstants {
     public static Pose2D cellPosition(Cell cell, Alliance alliance) {
         double x = cell == Cell.SCORING ? CELL_OFFSET_IN : -CELL_OFFSET_IN;
         double y = alliance == Alliance.RED ? HIVE_SIDE_IN : -HIVE_SIDE_IN;
-        return new Pose2D(x, y, 0);
+        return new Pose2D(FIELD_CENTER_X_IN + x, FIELD_CENTER_Y_IN + y, 0);
     }
 
     /** The goal to shoot at from here, field frame. */
@@ -90,9 +97,10 @@ public class FieldConstants {
      * symmetric, so this sets HIVE_SIDE_IN / CELL_OFFSET_IN for both alliances.
      */
     public static void setGoal(Alliance alliance, Pose2D measured) {
-        HIVE_SIDE_IN = Math.abs(measured.y);
-        CELL_OFFSET_IN = Math.abs(measured.x);
-        Cell up = measured.x >= 0 ? Cell.SCORING : Cell.AUDIENCE;
+        double x = measured.x - FIELD_CENTER_X_IN, y = measured.y - FIELD_CENTER_Y_IN;
+        HIVE_SIDE_IN = Math.abs(y);
+        CELL_OFFSET_IN = Math.abs(x);
+        Cell up = x >= 0 ? Cell.SCORING : Cell.AUDIENCE;
         if (alliance == Alliance.RED) redUpCell = up; else blueUpCell = up;
     }
 

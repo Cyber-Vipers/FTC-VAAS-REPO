@@ -184,9 +184,11 @@ public final class Constants {
         /**
          * Pod offsets from the robot's center, in mm. X pod (tracks forward): sideways from
          * center, LEFT = positive. Y pod (tracks sideways): forward of center, FORWARD = positive.
-         * 145 and 35.7 are from the old Teleop; check the signs with the Localizer Test.
+         * -101.6 / 0 (= -4 in / 0 in) were hardcoded in NeuronLocalizer, silently overriding these;
+         * the old Teleop used 145 / 35.7. Verify with the Localizer Test: spin 5 turns in place and
+         * x/y must stay near 0. Wrong offsets make the pose drift every time the robot turns to aim.
          */
-        public static double X_POD_OFFSET_MM = 145, Y_POD_OFFSET_MM = 35.7;
+        public static double X_POD_OFFSET_MM = -101.6, Y_POD_OFFSET_MM = 0;
         public static GoBildaPinpointDriver.GoBildaOdometryPods POD_TYPE = GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD;
         /** Pushing the robot forward must make x go UP, and pushing it left must make y go UP. */
         public static GoBildaPinpointDriver.EncoderDirection X_POD_DIRECTION = GoBildaPinpointDriver.EncoderDirection.REVERSED;

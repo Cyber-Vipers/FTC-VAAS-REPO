@@ -176,6 +176,7 @@ public class LiftShooter implements Subsystem {
     /** Robot must be sitting on the alliance's reset spot (FieldConstants.resetPose). */
     public void resetOdometry() {
         localizer.setPosition(FieldConstants.resetPose(alliance));
+        pose = localizer.getPose(); // otherwise the rest of this loop aims from the pre-reset pose
     }
 
     // ---- loop ----------------------------------------------------------------------------

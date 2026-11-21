@@ -31,8 +31,8 @@ public class OneTip extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         MecanumDrive drive = new MecanumDrive(hardwareMap, telemetry, gamepad1);;
-        robot = new LiftShooter(hardwareMap, telemetry,drive,localizer);
         localizer = LiftShooter.createLocalizer(hardwareMap, telemetry);
+        robot = new LiftShooter(hardwareMap, telemetry, drive, localizer); // was built before the localizer (null)
         localizer.calibrate(false); // recalibrate the IMU; the pose is set with Back on the reset spot
         this.drive = new NeuronDrive(hardwareMap,localizer,16.1);
 
