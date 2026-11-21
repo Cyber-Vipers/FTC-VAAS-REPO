@@ -173,7 +173,7 @@ public class LiftShooter implements Subsystem {
         return state != ShotState.NORMAL;
     }
 
-    /** Robot must be sitting on the alliance's reset spot (FieldConstants.resetPose). */
+    /** Robot must be sitting on the field center facing FieldConstants.RESET_HEADING_DEG. */
     public void resetOdometry() {
         localizer.setPosition(FieldConstants.resetPose(alliance));
         pose = localizer.getPose(); // otherwise the rest of this loop aims from the pre-reset pose
@@ -315,7 +315,11 @@ public class LiftShooter implements Subsystem {
         telemetry.addData("shot", "%s%s", state, shotStatus.isEmpty() ? "" : "  (" + shotStatus + ")");
         telemetry.addData("alliance", "%s%s", alliance, USE_ODOMETRY ? "" : "   USE_ODOMETRY off: fixed shot");
         telemetry.addData("pose", "x %.1f  y %.1f  h %.1f°", pose.x, pose.y, Math.toDegrees(pose.h));
-        telemetry.addData("to goal", "%.1f in  (%s CELL)", distanceToGoal, FieldConstants.targetCell(pose, alliance));
+        Pose2D goal = FieldConstants.goal(pose, alliance);
+        telemetry.addData("to goal", "%.1f in  (%s CELL at x %.1f y %.1f)", distanceToGoal,
+                FieldConstants.targetCell(pose, alliance), goal.x, goal.y);
+        telemetry.addData("from center line", "%.1f in  (CELL swaps past ±%.0f)",
+                pose.x - FieldConstants.FIELD_CENTER_X_IN, FieldConstants.CELL_SWITCH_BAND_IN);
         telemetry.addData("shot from here", "lift %.0f, flywheel %.0f  (table: %s)", liftTarget, speedTarget,
                 shotTable.loadedFromFile ? "from Control Hub" : "code defaults");
         lift.addTelemetry(telemetry);

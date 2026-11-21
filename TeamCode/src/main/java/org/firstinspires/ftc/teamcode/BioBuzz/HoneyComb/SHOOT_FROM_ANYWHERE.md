@@ -14,7 +14,7 @@ when all three are ready. Every other control is the same as before. All numbers
 | RT (press) | One-button shot: spin up, aim + lift, fire, back to normal |
 | RT again | During a shot that's lining up: fire as soon as the lift is up, without waiting for aim or flywheel |
 | Right stick | Moving it cancels a shot that is lining up (the robot is turning itself then) |
-| Back | Reset odometry. The robot must be on the alliance's reset spot |
+| Back | Reset odometry. The robot must be at the center of the field, facing -90° |
 | X / B during Init | Blue / red alliance |
 
 Backup: set `ShooterConstants.USE_ODOMETRY = false` and RT goes back to the old fixed shot
@@ -32,8 +32,8 @@ The robot shoots the old fixed shot (935 / 2200) while turning to the goal until
 2. **HoneyComb Localizer Test:** push forward -> x up, left -> y up, counter-clockwise -> heading up.
    Push 48 in along a tape (should read ~48), spin 5 turns in place (x/y should stay near 0). Fix
    `OdometryConstants` until both pass.
-3. **Reset spot:** set `FieldConstants.ROBOT_HALF_LENGTH_IN` / `ROBOT_HALF_WIDTH_IN` to your robot.
-   The reset spot is the alliance's loading-zone corner, back on its own alliance wall.
+3. **Reset spot:** the center of the field, facing -90° (`FieldConstants.RESET_HEADING_DEG`). The
+   center's odometry coordinates are `FIELD_CENTER_X_IN` / `FIELD_CENTER_Y_IN` (63, 63).
 4. **HoneyComb Goal Tuner:** sight the goal from 3-5 spots and paste the printed line into `FieldConstants`.
    Hold RB to check the aim. If the robot turns the wrong way, flip `DriveConstants.AIM_TURN_REVERSED`.
    Tune `AIM_KP` first, then `AIM_KD` to stop overshoot.

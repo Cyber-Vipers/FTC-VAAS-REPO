@@ -50,24 +50,22 @@ public class FieldConstants {
     private static Cell redAutoCell = Cell.SCORING, blueAutoCell = Cell.SCORING;
 
     /**
-     * Reset spot (Back button): the alliance's loading-zone corner, back against its own alliance
-     * wall, side against the end wall, facing the other alliance's wall. Measure your robot:
-     * half its length (front to back) and half its width put its center that far off the walls.
+     * Reset spot (Back button): the robot's center on the middle of the field
+     * (FIELD_CENTER_X_IN, FIELD_CENTER_Y_IN), facing RESET_HEADING_DEG. Same for both alliances.
      */
-    public static double ROBOT_HALF_LENGTH_IN = 9, ROBOT_HALF_WIDTH_IN = 9;
+    public static double RESET_HEADING_DEG = -90;
 
     /** Direction the shooter fires relative to the robot's front, in radians (Math.PI = out the back). */
     public static double SHOOTER_HEADING_OFFSET_RAD = 0;
 
+    /**
+     * Where Back puts odometry: the field center facing RESET_HEADING_DEG. (It used to be the
+     * alliance's corner, so pressing Back with the robot at the center put the pose ~60 in off:
+     * x never got back below the center line, the target stayed on the SCORING CELL, and the aim
+     * was wrong everywhere.) The alliance only picks the goal, not the reset spot.
+     */
     public static Pose2D resetPose(Alliance alliance) {
-        double x = HALF_FIELD_IN - ROBOT_HALF_WIDTH_IN;
-        double y = HALF_FIELD_IN - ROBOT_HALF_LENGTH_IN;
-        // RED: far end of the red wall, facing the blue wall. BLUE: audience end of the blue wall, facing
-        // red. The two loading-zone corners are diagonal from each other, so these are NOT mirror images
-        // across the x axis. If your reset spot is somewhere else, change it here.
-        return alliance == Alliance.RED
-                ? new Pose2D(FIELD_CENTER_X_IN + x, FIELD_CENTER_Y_IN + y, -Math.PI / 2)
-                : new Pose2D(FIELD_CENTER_X_IN - x, FIELD_CENTER_Y_IN - y, Math.PI / 2);
+        return new Pose2D(FIELD_CENTER_X_IN, FIELD_CENTER_Y_IN, Math.toRadians(RESET_HEADING_DEG));
     }
 
     /** The CELL to shoot at from here (see AUTO_CELL). */

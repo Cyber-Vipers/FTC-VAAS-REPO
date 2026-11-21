@@ -22,10 +22,10 @@ import org.firstinspires.ftc.teamcode.neuronpathing.NeuronLocalizer;
  *   RT (press)       one-button shot: turns to the goal, sets lift + flywheel from the distance,
  *                    fires when ready, then back to normal (see LiftShooter)
  *   RT again         during a shot that's lining up: fire as soon as the lift is up
- *   Back             reset odometry: the robot must be on the alliance's reset spot
+ *   Back             reset odometry: the robot must be at the center of the field facing -90°
  *                    (FieldConstants.resetPose)
  *
- * During Init: X = blue alliance, B = red (picks the goal and the reset spot).
+ * During Init: X = blue alliance, B = red (picks the goal).
  * ShooterConstants.USE_ODOMETRY = false makes RT the old fixed shot (no turning).
  */
 @TeleOp(name = "Honeycomb Robot Teleop", group = "Honeycomb")
